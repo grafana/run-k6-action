@@ -29899,6 +29899,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const glob = __importStar(__nccwpck_require__(8090));
 const fs = __importStar(__nccwpck_require__(5630));
 const child_process_1 = __nccwpck_require__(2081);
+var PIDs = [];
 run();
 /**
  * The main function for the action.
@@ -29923,6 +29924,7 @@ async function run() {
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
+                PIDs.push(child.pid);
                 exitPromises.push(new Promise(resolve => {
                     child.on('exit', (code, signal) => {
                         if (code !== 0) {
@@ -29952,6 +29954,7 @@ async function run() {
         else {
             for (const command of commands) {
                 const child = runCommand(command);
+                PIDs.push(child.pid);
                 await new Promise(resolve => {
                     child.on('exit', (code, signal) => {
                         if (code !== 0) {
@@ -30009,11 +30012,15 @@ async function run() {
 }
 exports.run = run;
 process.on('SIGINT', () => {
-    console.log('🚨 Caught SIGINT. Exiting...');
-    process.exit(1);
-});
-process.on('SIGTERM', () => {
-    console.log('🚨 Caught SIGTERM. Exiting...');
+    console.log('🚨 Caught SIGINT. Stoping all tests');
+    PIDs.forEach(pid => {
+        try {
+            process.kill(pid, 'SIGINT');
+        }
+        catch (error) {
+            console.error(`Failed to kill process with PID ${pid}`);
+        }
+    });
     process.exit(1);
 });
 async function isCloudIntegrationEnabled() {

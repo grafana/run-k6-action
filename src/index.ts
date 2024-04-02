@@ -3,6 +3,8 @@ import * as glob from '@actions/glob'
 import * as fs from 'fs-extra'
 import { spawn } from 'child_process'
 
+var PIDs: number[] = [];
+
 run()
 
 /**
@@ -32,6 +34,7 @@ export async function run(): Promise<void> {
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
+                PIDs.push(child.pid);
                 exitPromises.push(new Promise(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         if (code !== 0) {
@@ -59,6 +62,7 @@ export async function run(): Promise<void> {
         } else {
             for (const command of commands) {
                 const child = runCommand(command);
+                PIDs.push(child.pid);
                 await new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         if (code !== 0) {
@@ -116,14 +120,16 @@ export async function run(): Promise<void> {
 }
 
 process.on('SIGINT', () => {
-    console.log('🚨 Caught SIGINT. Exiting...');
+    console.log('🚨 Caught SIGINT. Stoping all tests')
+    PIDs.forEach(pid => {
+        try {
+            process.kill(pid, 'SIGINT');
+        } catch (error) {
+            console.error(`Failed to kill process with PID ${pid}`);
+        }
+    });
     process.exit(1);
 });
-
-process.on('SIGTERM', () => {
-    console.log('🚨 Caught SIGTERM. Exiting...');
-    process.exit(1);
-})
 
 async function isCloudIntegrationEnabled(): Promise<boolean> {
     if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
