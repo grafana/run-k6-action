@@ -1,5 +1,8 @@
 # run-k6-action
 
+This action allows you to easily execute k6 tests as part of your GitHub Actions workflow. It has support for globs, parallel execution, and fail-fast.
+
+
 ## Usage
 
 See [action.yml](action.yaml).
@@ -26,6 +29,8 @@ jobs:
 
 #### Grafana Cloud k6 integration
 
+To send the results to Grafana Cloud k6, you need to set the GCk6 environment variables.
+
 ```yaml
 on:
   push:
@@ -47,7 +52,7 @@ jobs:
             ./tests/protocol*.js
 ```
 
-When the Cloud environment variables are set, by default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you can change the `cloud-run-locally` input to `false`:
+By default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you need to change the `cloud-run-locally` input to `false`:
 
 ```yaml
 - uses: grafana/run-k6-action@v1
