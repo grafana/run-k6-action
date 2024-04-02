@@ -1,0 +1,32 @@
+{
+  "name": "run-k6-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "package": "ncc build src/index.ts",
+    "testPush": "npm run package; gh act release",
+    "testPR": "npm run package; gh act pull_request",
+    "testRelease": "npm run package; gh act release"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chmodr": "^1.0.3",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "@actions/glob": "^0.4.0",
+    "@actions/http-client": "^2.2.1",
+    "@actions/tool-cache": "^2.0.1",
+    "@vercel/ncc": "^0.38.1",
+    "chmodr": "^1.2.0",
+    "fs-extra": "^11.2.0"
+  }
+}

@@ -1,0 +1,27 @@
+name: 'Run a Grafana k6 tests'
+description: 'Run Grafana k6 tests'
+
+branding:
+  icon: 'arrow-down-circle'
+  color: 'purple'
+
+inputs:
+  path:
+    description: 'Path to the k6 test files'
+    required: true
+  parallel:
+    description: 'If true, run tests in parallel'
+    required: false
+  fail-fast:
+    description: 'If true, fail on first test failure'
+    required: false
+  flags:
+    description: 'Additional flags to pass to k6 tests'
+    required: false
+  cloud-run-locally:
+    description: 'If true, run tests locally instead and upload results to Grafana Cloud k6'
+    required: false
+
+runs:
+  using: node20
+  main: dist/index.js
