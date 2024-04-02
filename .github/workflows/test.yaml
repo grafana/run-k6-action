@@ -19,5 +19,6 @@ jobs:
       with:
         path: |
           ./dev/protocol*.js
-        flags: --vus 10 --duration 5m
-        parallel: false
+        flags: --vus 10 --duration 30s
+        parallel: true
+        cloud-run-locally: false

@@ -47,9 +47,7 @@ jobs:
             ./tests/protocol*.js
 ```
 
-When the Cloud environment variables are set, by default, the action will run k6 locally and send the results to Grafana Cloud k6.
-
-If you want to run the tests in our Cloud instances, you can change the `cloud-run-locally` input to `false`:
+When the Cloud environment variables are set, by default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you can change the `cloud-run-locally` input to `false`:
 
 ```yaml
 - uses: grafana/run-k6-action@v1
