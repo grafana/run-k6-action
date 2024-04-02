@@ -30008,6 +30008,14 @@ async function run() {
     }
 }
 exports.run = run;
+process.on('SIGINT', () => {
+    console.log('🚨 Caught SIGINT. Exiting...');
+    process.exit(1);
+});
+process.on('SIGTERM', () => {
+    console.log('🚨 Caught SIGTERM. Exiting...');
+    process.exit(1);
+});
 async function isCloudIntegrationEnabled() {
     if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
         return false;
