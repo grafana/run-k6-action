@@ -20,4 +20,4 @@ jobs:
         path: |
           ./dev/protocol*.js
         flags: --vus 10 --duration 5m
-        parallel: true
+        parallel: false
