@@ -19,11 +19,4 @@ jobs:
       with:
         path: |
           ./dev/protocol*.js
-        flags: --vus 10 --duration 20s
-        parallel: true
-    - uses: ./
-      continue-on-error: true
-      with:
-        path: |
-          ./dev/protocol*.js
-        flags: --vus 10 --duration 20s
+        flags: --vus 10 --duration 5m
