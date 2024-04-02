@@ -3,7 +3,7 @@ import * as glob from '@actions/glob'
 import * as fs from 'fs-extra'
 import { spawn } from 'child_process'
 
-var PIDs: number[] = [];
+var TEST_PIDS: number[] = [];
 
 run()
 
@@ -34,9 +34,13 @@ export async function run(): Promise<void> {
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
-                PIDs.push(child.pid);
+                TEST_PIDS.push(child.pid);
                 exitPromises.push(new Promise(resolve => {
                     child.on('exit', (code: number, signal: string) => {
+                        const index = TEST_PIDS.indexOf(child.pid);
+                        if (index > -1) {
+                            TEST_PIDS.splice(index, 1);
+                        }
                         if (code !== 0) {
                             if (failFast) {
                                 console.log('🚨 Fail fast enabled. Stopping further tests.');
@@ -62,9 +66,13 @@ export async function run(): Promise<void> {
         } else {
             for (const command of commands) {
                 const child = runCommand(command);
-                PIDs.push(child.pid);
+                TEST_PIDS.push(child.pid);
                 await new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
+                        const index = TEST_PIDS.indexOf(child.pid);
+                        if (index > -1) {
+                            TEST_PIDS.splice(index, 1);
+                        }
                         if (code !== 0) {
                             if (failFast) {
                                 console.log('🚨 Fail fast enabled. Stopping further tests.');
@@ -121,7 +129,7 @@ export async function run(): Promise<void> {
 
 process.on('SIGINT', () => {
     console.log('🚨 Caught SIGINT. Stoping all tests')
-    PIDs.forEach(pid => {
+    TEST_PIDS.forEach(pid => {
         try {
             process.kill(pid, 'SIGINT');
         } catch (error) {

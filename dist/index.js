@@ -29899,7 +29899,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const glob = __importStar(__nccwpck_require__(8090));
 const fs = __importStar(__nccwpck_require__(5630));
 const child_process_1 = __nccwpck_require__(2081);
-var PIDs = [];
+var TEST_PIDS = [];
 run();
 /**
  * The main function for the action.
@@ -29924,9 +29924,13 @@ async function run() {
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
-                PIDs.push(child.pid);
+                TEST_PIDS.push(child.pid);
                 exitPromises.push(new Promise(resolve => {
                     child.on('exit', (code, signal) => {
+                        const index = TEST_PIDS.indexOf(child.pid);
+                        if (index > -1) {
+                            TEST_PIDS.splice(index, 1);
+                        }
                         if (code !== 0) {
                             if (failFast) {
                                 console.log('🚨 Fail fast enabled. Stopping further tests.');
@@ -29954,9 +29958,13 @@ async function run() {
         else {
             for (const command of commands) {
                 const child = runCommand(command);
-                PIDs.push(child.pid);
+                TEST_PIDS.push(child.pid);
                 await new Promise(resolve => {
                     child.on('exit', (code, signal) => {
+                        const index = TEST_PIDS.indexOf(child.pid);
+                        if (index > -1) {
+                            TEST_PIDS.splice(index, 1);
+                        }
                         if (code !== 0) {
                             if (failFast) {
                                 console.log('🚨 Fail fast enabled. Stopping further tests.');
@@ -30013,7 +30021,7 @@ async function run() {
 exports.run = run;
 process.on('SIGINT', () => {
     console.log('🚨 Caught SIGINT. Stoping all tests');
-    PIDs.forEach(pid => {
+    TEST_PIDS.forEach(pid => {
         try {
             process.kill(pid, 'SIGINT');
         }
