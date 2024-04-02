@@ -27,7 +27,7 @@ jobs:
       - uses: grafana/run-k6-action@v1
         with:
           path: |
-            ./tests/protocol*.js
+            ./tests/api*.js
 ```
 
 #### Grafana Cloud k6 integration
@@ -52,7 +52,7 @@ jobs:
           K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
         with:
           path: |
-            ./tests/protocol*.js
+            ./tests/api*.js
 ```
 
 By default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you need to change the `cloud-run-locally` input to `false`:
@@ -64,7 +64,7 @@ By default, the action will run k6 locally and send the results to Grafana Cloud
     K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
   with:
     path: |
-      ./tests/protocol*.js
+      ./tests/api*.js
     cloud-run-locally: false
 ```
 
@@ -82,10 +82,12 @@ jobs:
       - uses: grafana/setup-k6-action@v1
         with:
           k6-version: "0.49.0"
+          browser: true
       - uses: grafana/run-k6-action@v1
         with:
           path: |
-            ./tests/protocol*.js
+            ./tests/api*.js
+            ./tests/app*.js
           flags: --vus 10 --duration 20s # optional: flags to pass to to each k6 test (default: none)
           parallel: true # optional: run tests in parallel (default: false)
           fail-fast: false # optional: fail the step early if any test fails (default: true)
