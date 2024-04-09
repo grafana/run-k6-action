@@ -23,10 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: grafana/setup-k6-action@v1
+      - uses: grafana/setup-k6-action@v0.0.1
         with:
           k6-version: "0.49.0"
-      - uses: grafana/run-k6-action@v1
+      - uses: grafana/run-k6-action@v0.0.1
         with:
           path: |
             ./tests/api*.js
@@ -45,10 +45,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: grafana/setup-k6-action@v1
+      - uses: grafana/setup-k6-action@v0.0.1
         with:
           k6-version: "0.49.0"
-      - uses: grafana/run-k6-action@v1
+      - uses: grafana/run-k6-action@v0.0.1
         env:
           K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
           K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
@@ -60,7 +60,7 @@ jobs:
 By default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you need to change the `cloud-run-locally` input to `false`:
 
 ```yaml
-- uses: grafana/run-k6-action@v1
+- uses: grafana/run-k6-action@v0.0.1
   env:
     K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
     K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
@@ -81,11 +81,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: grafana/setup-k6-action@v1
+      - uses: grafana/setup-k6-action@v0.0.1
         with:
           k6-version: "0.49.0"
           browser: true
-      - uses: grafana/run-k6-action@v1
+      - uses: grafana/run-k6-action@v0.0.1
         with:
           path: |
             ./tests/api*.js
