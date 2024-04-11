@@ -29897,8 +29897,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const glob = __importStar(__nccwpck_require__(8090));
-const fs = __importStar(__nccwpck_require__(5630));
 const child_process_1 = __nccwpck_require__(2081);
+const fs = __importStar(__nccwpck_require__(5630));
 var TEST_PIDS = [];
 run();
 /**
@@ -29990,7 +29990,7 @@ async function run() {
         function generateCommand(path) {
             const args = [
                 // `--address=""`, // Disable the REST API. THIS DOESN'T WORK???? TODO: Investigate
-                '--quiet',
+                // '--quiet',
                 ...(flags ? flags.split(' ') : []),
             ];
             if (isCloud && cloudRunLocally) {

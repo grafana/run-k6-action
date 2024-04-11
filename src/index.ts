@@ -1,7 +1,7 @@
-import * as core from '@actions/core'
-import * as glob from '@actions/glob'
-import * as fs from 'fs-extra'
-import { spawn } from 'child_process'
+import * as core from '@actions/core';
+import * as glob from '@actions/glob';
+import { spawn } from 'child_process';
+import * as fs from 'fs-extra';
 
 var TEST_PIDS: number[] = [];
 
@@ -98,7 +98,7 @@ export async function run(): Promise<void> {
         function generateCommand(path: string): string {
             const args = [
                 // `--address=""`, // Disable the REST API. THIS DOESN'T WORK???? TODO: Investigate
-                '--quiet',
+                // '--quiet',
                 ...(flags ? flags.split(' ') : []),
             ]
             if (isCloud && cloudRunLocally) {
