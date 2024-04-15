@@ -2,8 +2,10 @@ import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import { spawn } from 'child_process';
 import * as fs from 'fs-extra';
+import { parseK6Output } from './k6OutputParser';
 
-var TEST_PIDS: number[] = [];
+const TEST_PIDS: number[] = [],
+    TEST_RESULT_URLS_MAP: { [key: string]: string } = {};
 
 run()
 
@@ -21,7 +23,8 @@ export async function run(): Promise<void> {
 
         const isCloud = await isCloudIntegrationEnabled()
 
-        const commands = testPaths.map(testPath => generateCommand(testPath))
+        const commands = testPaths.map(testPath => generateCommand(testPath)),
+            TOTAL_TEST_RUNS = commands.length;
         if (commands.length === 0) {
             throw new Error('No test files found')
         }
@@ -98,7 +101,6 @@ export async function run(): Promise<void> {
         function generateCommand(path: string): string {
             const args = [
                 // `--address=""`, // Disable the REST API. THIS DOESN'T WORK???? TODO: Investigate
-                // '--quiet',
                 ...(flags ? flags.split(' ') : []),
             ]
             if (isCloud && cloudRunLocally) {
@@ -115,11 +117,14 @@ export async function run(): Promise<void> {
 
             console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
             const child = spawn(cmd, args, {
-                stdio: 'inherit', // piping all stdio to /dev/null
+                stdio: ['inherit'], 
                 detached: true,
                 env: process.env,
             });
-
+            // Parse k6 command output and extract test run URLs if running in cloud mode. 
+            // Also, print the output to the console, excluding the progress lines.
+            child.stdout?.on('data', (data) => parseK6Output(data, isCloud ? TEST_RESULT_URLS_MAP : null, TOTAL_TEST_RUNS));  
+            
             return child;
         }
     } catch (error) {
