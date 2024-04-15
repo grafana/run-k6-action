@@ -4,8 +4,10 @@ const REGEX_EXPRESSIONS = {
     scriptPath: /^\s*script:\s*(.+)$/m,
     output: /^\s*output:\s*(.+)$/m,
     runningIteration: /running \(.*\), \d+\/\d+ VUs, \d+ complete and \d+ interrupted iterations/g,
-    runProgress: /\[ *(\d+)% *\] *\d+ VUs/g
-}; 
+    //  default   [  20% ] 10 VUs  1.0s/5s  
+    // createBrowser   [  61% ] 035/500 VUs  0m36.5s/1m0s  5.00 iters/s
+    runProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g
+};
 
 
 function extractTestRunUrl(data: string, testResultUrlsMap: TestResultUrlsMap): boolean {
@@ -70,11 +72,11 @@ function checkIfK6ASCIIArt(data: string): boolean {
 
     let K6_ASCII_ART_CHARS = [
         '|', ' ', '\n', '/',
-        '‾', '(', ')',  '_',
+        '‾', '(', ')', '_',
         '.', 'i', 'o', '\\'
-      ],
-      dataChars = new Set(data);
-      
+    ],
+        dataChars = new Set(data);
+
 
     if (dataChars.size !== K6_ASCII_ART_CHARS.length) {
         return false;
@@ -99,11 +101,11 @@ export function parseK6Output(data: Buffer, testResultUrlsMap: TestResultUrlsMap
     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
     * 
     * @returns {void}
-    */ 
+    */
 
     const dataString = data.toString(),
         lines = dataString.split('\n');
-    
+
     // Extract test run URLs
     if (testResultUrlsMap && Object.keys(testResultUrlsMap).length < totalTestRuns) {
         if (extractTestRunUrl(dataString, testResultUrlsMap)) {
@@ -118,7 +120,7 @@ export function parseK6Output(data: Buffer, testResultUrlsMap: TestResultUrlsMap
             // hence if all the test URLs are extracted, the ASCII art will not be printed. 
             return;
         }
-    }   
+    }
 
     const filteredLines = lines.filter((line) => {
         const isRegexMatch = REGEX_EXPRESSIONS.runningIteration.test(line) || REGEX_EXPRESSIONS.runProgress.test(line);

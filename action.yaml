@@ -6,6 +6,10 @@ branding:
   color: 'purple'
 
 inputs:
+  github-token:
+    description: 'GitHub API Access Token'
+    default: ${{ github.token }}
+    required: true
   path:
     description: 'Path to the k6 test files'
     required: true
