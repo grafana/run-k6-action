@@ -34194,7 +34194,7 @@ async function getPullRequestNumber() {
         commitSHA = payload.after;
     }
     if (!commitSHA) {
-        console.log('Commit SHA not found, unable to get pull request number.');
+        core.debug('Commit SHA not found, unable to get pull request number.');
         return;
     }
     const result = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
@@ -34271,7 +34271,7 @@ async function generatePRComment(testResultUrlsMap) {
      *
      *
      * */
-    console.log('Generating PR comment');
+    core.debug('Generating PR comment');
     let testRunUrls = '';
     for (const [scriptPath, testRunUrl] of Object.entries(testResultUrlsMap)) {
         testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
@@ -34284,11 +34284,11 @@ async function generatePRComment(testResultUrlsMap) {
   `;
     const pullRequestNumber = await getPullRequestNumber();
     if (!pullRequestNumber) {
-        console.log('Pull request number not found skipping comment creation');
+        core.debug('Pull request number not found skipping comment creation');
         return;
     }
     await createOrUpdateComment(pullRequestNumber, comment);
-    console.log('Comment created successfully');
+    core.debug('Comment created successfully');
 }
 exports.generatePRComment = generatePRComment;
 
@@ -34349,8 +34349,8 @@ async function run() {
             set: (target, key, value) => {
                 target[key] = value;
                 if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                    console.log('📊 URLs for all the tests gathered');
-                    console.log('📊 Test URLs:', target);
+                    core.debug('📊 URLs for all the tests gathered');
+                    core.debug(`📊 Test URLs: ${target}`);
                     if (isCloud) {
                         // Generate PR comment with test run URLs
                         (0, githubHelper_1.generatePRComment)(target);
@@ -34515,12 +34515,24 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseK6Output = void 0;
 const REGEX_EXPRESSIONS = {
     scriptPath: /^\s*script:\s*(.+)$/m,
+    // output: https://k6cloud.grafana.net/a/k6-app/runs/123
+    // output: cloud (https://k6cloud.grafana.net/a/k6-app/runs/2662254)
     output: /^\s*output:\s*(.+)$/m,
+    outputCloudUrl: /cloud\s*\((.+)\)/,
     runningIteration: /running \(.*\), \d+\/\d+ VUs, \d+ complete and \d+ interrupted iterations/g,
     //  default   [  20% ] 10 VUs  1.0s/5s  
     // createBrowser   [  61% ] 035/500 VUs  0m36.5s/1m0s  5.00 iters/s
-    runProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g
-};
+    executionProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g,
+    // Init   [   0% ] Loading test script...
+    // Init   [   0% ] Validating script options
+    // Run    [  17% ] 14.0s/35s
+    // Run    [   0% ] Initializing
+    cloudRunExecution: /Init|Run\s+\[\s+\d+%\s+\]/g
+}, TEST_RUN_PROGRESS_MSG_REGEXES = [
+    REGEX_EXPRESSIONS.runningIteration,
+    REGEX_EXPRESSIONS.executionProgress,
+    REGEX_EXPRESSIONS.cloudRunExecution
+];
 function extractTestRunUrl(data, testResultUrlsMap) {
     /**
      * This function extracts the script path and output URL from the k6 output.
@@ -34539,8 +34551,10 @@ function extractTestRunUrl(data, testResultUrlsMap) {
     // Extracting the output URL
     const outputMatch = data.match(REGEX_EXPRESSIONS.output);
     const output = outputMatch ? outputMatch[1] : null;
+    const outputCloudUrlMatch = output ? output.match(REGEX_EXPRESSIONS.outputCloudUrl) : null;
+    const outputCloudUrl = outputCloudUrlMatch ? outputCloudUrlMatch[1] : output;
     if (scriptPath && output) {
-        testResultUrlsMap[scriptPath] = output;
+        testResultUrlsMap[scriptPath] = outputCloudUrl || '';
         return true;
     }
     else {
@@ -34575,6 +34589,9 @@ function checkIfK6ASCIIArt(data) {
     if (!data.includes(".io")) {
         return false;
     }
+    // During cloud execution, the ASCII art is printed with %0A instead of \n
+    data = data.replace(/%0A/g, "\n");
+    data = data.slice(0, data.indexOf(".io") + 3);
     let K6_ASCII_ART_CHARS = [
         '|', ' ', '\n', '/',
         '‾', '(', ')', '_',
@@ -34620,7 +34637,7 @@ function parseK6Output(data, testResultUrlsMap, totalTestRuns) {
         }
     }
     const filteredLines = lines.filter((line) => {
-        const isRegexMatch = REGEX_EXPRESSIONS.runningIteration.test(line) || REGEX_EXPRESSIONS.runProgress.test(line);
+        const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
         return !isRegexMatch;
     });
     if (filteredLines.length < lines.length) {

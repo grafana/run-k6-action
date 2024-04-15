@@ -29,8 +29,8 @@ export async function run(): Promise<void> {
                 set: (target: { [key: string]: string }, key: string, value: string) => {
                     target[key] = value;
                     if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                        console.log('📊 URLs for all the tests gathered');
-                        console.log('📊 Test URLs:', target);
+                        core.debug('📊 URLs for all the tests gathered');
+                        core.debug(`📊 Test URLs: ${target}`);
 
                         if (isCloud) {
                             // Generate PR comment with test run URLs

@@ -2,12 +2,25 @@ import { TestResultUrlsMap } from './types';
 
 const REGEX_EXPRESSIONS = {
     scriptPath: /^\s*script:\s*(.+)$/m,
+    // output: https://k6cloud.grafana.net/a/k6-app/runs/123
+    // output: cloud (https://k6cloud.grafana.net/a/k6-app/runs/2662254)
     output: /^\s*output:\s*(.+)$/m,
+    outputCloudUrl: /cloud\s*\((.+)\)/,
     runningIteration: /running \(.*\), \d+\/\d+ VUs, \d+ complete and \d+ interrupted iterations/g,
     //  default   [  20% ] 10 VUs  1.0s/5s  
     // createBrowser   [  61% ] 035/500 VUs  0m36.5s/1m0s  5.00 iters/s
-    runProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g
-};
+    executionProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g,
+    // Init   [   0% ] Loading test script...
+    // Init   [   0% ] Validating script options
+    // Run    [  17% ] 14.0s/35s
+    // Run    [   0% ] Initializing
+    cloudRunExecution: /Init|Run\s+\[\s+\d+%\s+\]/g
+},
+    TEST_RUN_PROGRESS_MSG_REGEXES = [
+        REGEX_EXPRESSIONS.runningIteration,
+        REGEX_EXPRESSIONS.executionProgress,
+        REGEX_EXPRESSIONS.cloudRunExecution
+    ];
 
 
 function extractTestRunUrl(data: string, testResultUrlsMap: TestResultUrlsMap): boolean {
@@ -30,9 +43,11 @@ function extractTestRunUrl(data: string, testResultUrlsMap: TestResultUrlsMap): 
     // Extracting the output URL
     const outputMatch = data.match(REGEX_EXPRESSIONS.output);
     const output = outputMatch ? outputMatch[1] : null;
+    const outputCloudUrlMatch = output ? output.match(REGEX_EXPRESSIONS.outputCloudUrl) : null;
+    const outputCloudUrl = outputCloudUrlMatch ? outputCloudUrlMatch[1] : output;
 
     if (scriptPath && output) {
-        testResultUrlsMap[scriptPath] = output;
+        testResultUrlsMap[scriptPath] = outputCloudUrl || '';
         return true;
     } else {
         return false;
@@ -69,6 +84,11 @@ function checkIfK6ASCIIArt(data: string): boolean {
     if (!data.includes(".io")) {
         return false;
     }
+
+    // During cloud execution, the ASCII art is printed with %0A instead of \n
+    data = data.replace(/%0A/g, "\n");
+
+    data = data.slice(0, data.indexOf(".io") + 3);
 
     let K6_ASCII_ART_CHARS = [
         '|', ' ', '\n', '/',
@@ -123,7 +143,8 @@ export function parseK6Output(data: Buffer, testResultUrlsMap: TestResultUrlsMap
     }
 
     const filteredLines = lines.filter((line) => {
-        const isRegexMatch = REGEX_EXPRESSIONS.runningIteration.test(line) || REGEX_EXPRESSIONS.runProgress.test(line);
+        const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
+
         return !isRegexMatch;
     });
 

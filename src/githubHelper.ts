@@ -31,7 +31,7 @@ export async function getPullRequestNumber(): Promise<number | undefined> {
   }
 
   if (!commitSHA) {
-    console.log('Commit SHA not found, unable to get pull request number.')
+    core.debug('Commit SHA not found, unable to get pull request number.')
     return;
   }
 
@@ -123,7 +123,7 @@ export async function generatePRComment(testResultUrlsMap: any) {
    * 
    * */
 
-  console.log('Generating PR comment')
+  core.debug('Generating PR comment')
 
   let testRunUrls = '';
   for (const [scriptPath, testRunUrl] of Object.entries(testResultUrlsMap)) {
@@ -140,11 +140,11 @@ export async function generatePRComment(testResultUrlsMap: any) {
   const pullRequestNumber = await getPullRequestNumber();
 
   if (!pullRequestNumber) {
-    console.log('Pull request number not found skipping comment creation');
+    core.debug('Pull request number not found skipping comment creation');
     return;
   }
 
   await createOrUpdateComment(pullRequestNumber, comment);
 
-  console.log('Comment created successfully');
+  core.debug('Comment created successfully');
 }
