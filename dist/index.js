@@ -30012,7 +30012,7 @@ async function run() {
             });
             // Parse k6 command output and extract test run URLs if running in cloud mode. 
             // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, isCloud ? TEST_RESULT_URLS_MAP : null, TOTAL_TEST_RUNS));
+            child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS));
             return child;
         }
     }
@@ -30083,7 +30083,7 @@ function extractTestRunUrl(data, testResultUrlsMap) {
      * @param {string} data - The k6 command output data as string
      * @param {TestResultUrlsMap} testResultUrlsMap - The map containing the script path and output URL
      *
-     * @returns {void}
+     * @returns {boolean} - Returns true if the script path and output URL were successfully extracted and added to the map. Otherwise, returns false.
      *
      */
     // Extracting the script path
@@ -30094,6 +30094,55 @@ function extractTestRunUrl(data, testResultUrlsMap) {
     const output = outputMatch ? outputMatch[1] : null;
     if (scriptPath && output) {
         testResultUrlsMap[scriptPath] = output;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+function checkIfK6ASCIIArt(data) {
+    /**
+     * This function checks if the given data is the k6 ASCII art or not.
+     *
+     * @param {string} data - The data to check
+     *
+     * @returns {boolean} - Returns true if the data is the k6 ASCII art. Otherwise, returns false.
+     *
+     * The k6 ASCII art is as follows:
+     *
+     *
+     *
+     *          /\      |‾‾| /‾‾/   /‾‾/
+     *     /\  /  \     |  |/  /   /  /
+     *    /  \/    \    |     (   /   ‾‾\
+     *   /          \   |  |\  \ |  (‾)  |
+     *  / __________ \  |__| \__\ \_____/ .io
+     *
+     * To determine if the data is the k6 ASCII art, the function checks the following:
+     * 1. The function checks if the data contains only the following characters:
+     *      |, ' ', '\n', '/', '‾', '(', ')', '_', '.', 'i', 'o'
+     *
+     * 2. The function also checks if the data contains ".io" at the end.
+     *
+     * */
+    if (!data.includes(".io")) {
+        return false;
+    }
+    let K6_ASCII_ART_CHARS = [
+        '|', ' ', '\n', '/',
+        '‾', '(', ')', '_',
+        '.', 'i', 'o', '\\'
+    ], dataChars = new Set(data);
+    if (dataChars.size !== K6_ASCII_ART_CHARS.length) {
+        return false;
+    }
+    else {
+        for (let char of dataChars) {
+            if (!K6_ASCII_ART_CHARS.includes(char)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 function parseK6Output(data, testResultUrlsMap, totalTestRuns) {
@@ -30111,7 +30160,17 @@ function parseK6Output(data, testResultUrlsMap, totalTestRuns) {
     const dataString = data.toString(), lines = dataString.split('\n');
     // Extract test run URLs
     if (testResultUrlsMap && Object.keys(testResultUrlsMap).length < totalTestRuns) {
-        extractTestRunUrl(dataString, testResultUrlsMap);
+        if (extractTestRunUrl(dataString, testResultUrlsMap)) {
+            // Test URL was extracted successfully and added to the map. 
+            // Ignore further output parsing for this data.
+            return;
+        }
+        if (checkIfK6ASCIIArt(dataString)) {
+            // Ignore the k6 ASCII art.
+            // Checking the k6 ASCII art here because it is printed at the start of execution, 
+            // hence if all the test URLs are extracted, the ASCII art will not be printed. 
+            return;
+        }
     }
     const filteredLines = lines.filter((line) => {
         const isRegexMatch = REGEX_EXPRESSIONS.runningIteration.test(line) || REGEX_EXPRESSIONS.runProgress.test(line);
