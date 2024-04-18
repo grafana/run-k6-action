@@ -22,6 +22,7 @@ export async function run(): Promise<void> {
         const flags = core.getInput('flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('comment-cloud-test-run-url-on-pr', { required: false }) === 'true'
+        const allPromises: Promise<void>[] = [];
 
         const isCloud = await isCloudIntegrationEnabled()
 
@@ -33,7 +34,7 @@ export async function run(): Promise<void> {
                     if (Object.keys(target).length === TOTAL_TEST_RUNS) {
                         if (isCloud && shouldCommentCloudTestRunUrlOnPR) {
                             // Generate PR comment with test run URLs
-                            generatePRComment(target);
+                            allPromises.push(generatePRComment(target));
                         }
                     }
                     return true;
@@ -48,12 +49,12 @@ export async function run(): Promise<void> {
 
         if (parallel) {
             const childProcesses = [] as any[];
-            const exitPromises: Promise<void>[] = [];
+
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
                 TEST_PIDS.push(child.pid);
-                exitPromises.push(new Promise(resolve => {
+                allPromises.push(new Promise(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -79,13 +80,11 @@ export async function run(): Promise<void> {
                     });
                 }));
             });
-
-            await Promise.all(exitPromises);
         } else {
             for (const command of commands) {
                 const child = runCommand(command);
                 TEST_PIDS.push(child.pid);
-                await new Promise<void>(resolve => {
+                allPromises.push(new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -104,9 +103,10 @@ export async function run(): Promise<void> {
                         }
                         resolve();
                     });
-                });
+                }));
             }
         }
+        await Promise.all(allPromises);
 
         if (!allTestsPassed) {
             console.log('🚨 Some tests failed');
