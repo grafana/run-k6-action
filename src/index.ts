@@ -21,6 +21,7 @@ export async function run(): Promise<void> {
         const failFast = core.getInput('fail-fast', { required: false }) === 'true'
         const flags = core.getInput('flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
+        const shouldCommentCloudTestRunUrlOnPR = core.getInput('comment-cloud-test-run-url-on-pr', { required: false }) === 'true'
 
         const isCloud = await isCloudIntegrationEnabled()
 
@@ -30,7 +31,7 @@ export async function run(): Promise<void> {
                 set: (target: TestRunUrlsMap, key: string, value: string) => {
                     target[key] = value;
                     if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                        if (isCloud) {
+                        if (isCloud && shouldCommentCloudTestRunUrlOnPR) {
                             // Generate PR comment with test run URLs
                             generatePRComment(target);
                         }

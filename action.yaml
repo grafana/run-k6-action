@@ -25,6 +25,10 @@ inputs:
   cloud-run-locally:
     description: 'If true, run tests locally instead and upload results to Grafana Cloud k6'
     required: false
+  comment-cloud-test-run-url-on-pr:
+    description: 'If true, comment the cloud test run URL on the pull request'
+    default: "true"
+    required: false
 
 runs:
   using: node20
