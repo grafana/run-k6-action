@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { TestRunUrlsMap } from './types';
 
 const { context } = github;
 const { eventName, payload } = context;
@@ -112,39 +113,53 @@ export async function createOrUpdateComment(pullRequestNumber: number, commentBo
   }
 }
 
-export async function generatePRComment(testResultUrlsMap: any) {
+export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise<void> {
   /**
-   * This function generates the body of the action comment.
+   * This function posts/updates a comment containing the test run URLs if a pull request is present.
    *
-   * @param {any} testResults - The test results
-   * 
-   * @returns {string} - The body of the action comment
-   *  
+   * @param {TestRunUrlsMap} testResults - Map of test run URLs where the key is the script path 
+   *  and the value is the test run URL 
    * 
    * */
+
+  if (Object.keys(testRunUrlsMap).length === 0) {
+    core.debug('No test result URLs found, skipping comment creation');
+    return;
+  }
 
   core.debug('Generating PR comment')
 
   let testRunUrls = '';
-  for (const [scriptPath, testRunUrl] of Object.entries(testResultUrlsMap)) {
+  for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
     testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
   }
 
   let comment = `# Performance Test Results 🚀
   
-  Click on the links below to view the test results on Grafana Cloud K6:
+  Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
   ${testRunUrls}
   `;
 
-  const pullRequestNumber = await getPullRequestNumber();
+  let pullRequestNumber;
+
+  try {
+    pullRequestNumber = await getPullRequestNumber();
+  } catch (error: any) {
+    core.error(`Error getting pull request number`);
+    core.error(error);
+  }
 
   if (!pullRequestNumber) {
     core.debug('Pull request number not found skipping comment creation');
     return;
   }
 
-  await createOrUpdateComment(pullRequestNumber, comment);
-
-  core.debug('Comment created successfully');
+  try {
+    await createOrUpdateComment(pullRequestNumber, comment);
+    core.debug('Comment created successfully');
+  } catch (error: any) {
+    core.error(`Error creating comment on pull request: ${pullRequestNumber}`);
+    core.error(error);
+  }
 }

@@ -34261,34 +34261,49 @@ async function createOrUpdateComment(pullRequestNumber, commentBody) {
     }
 }
 exports.createOrUpdateComment = createOrUpdateComment;
-async function generatePRComment(testResultUrlsMap) {
+async function generatePRComment(testRunUrlsMap) {
     /**
-     * This function generates the body of the action comment.
+     * This function posts/updates a comment containing the test run URLs if a pull request is present.
      *
-     * @param {any} testResults - The test results
-     *
-     * @returns {string} - The body of the action comment
-     *
+     * @param {TestRunUrlsMap} testResults - Map of test run URLs where the key is the script path
+     *  and the value is the test run URL
      *
      * */
+    if (Object.keys(testRunUrlsMap).length === 0) {
+        core.debug('No test result URLs found, skipping comment creation');
+        return;
+    }
     core.debug('Generating PR comment');
     let testRunUrls = '';
-    for (const [scriptPath, testRunUrl] of Object.entries(testResultUrlsMap)) {
+    for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
         testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
     }
     let comment = `# Performance Test Results 🚀
   
-  Click on the links below to view the test results on Grafana Cloud K6:
+  Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
   ${testRunUrls}
   `;
-    const pullRequestNumber = await getPullRequestNumber();
+    let pullRequestNumber;
+    try {
+        pullRequestNumber = await getPullRequestNumber();
+    }
+    catch (error) {
+        core.error(`Error getting pull request number`);
+        core.error(error);
+    }
     if (!pullRequestNumber) {
         core.debug('Pull request number not found skipping comment creation');
         return;
     }
-    await createOrUpdateComment(pullRequestNumber, comment);
-    core.debug('Comment created successfully');
+    try {
+        await createOrUpdateComment(pullRequestNumber, comment);
+        core.debug('Comment created successfully');
+    }
+    catch (error) {
+        core.error(`Error creating comment on pull request: ${pullRequestNumber}`);
+        core.error(error);
+    }
 }
 exports.generatePRComment = generatePRComment;
 
@@ -34349,8 +34364,6 @@ async function run() {
             set: (target, key, value) => {
                 target[key] = value;
                 if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                    core.debug('📊 URLs for all the tests gathered');
-                    core.debug(`📊 Test URLs: ${target}`);
                     if (isCloud) {
                         // Generate PR comment with test run URLs
                         (0, githubHelper_1.generatePRComment)(target);
@@ -34533,14 +34546,14 @@ const REGEX_EXPRESSIONS = {
     REGEX_EXPRESSIONS.executionProgress,
     REGEX_EXPRESSIONS.cloudRunExecution
 ];
-function extractTestRunUrl(data, testResultUrlsMap) {
+function extractTestRunUrl(data, testRunUrlsMap) {
     /**
      * This function extracts the script path and output URL from the k6 output.
-     * It then adds the script path and output URL to the testResultUrlsMap which is a reference to
+     * It then adds the script path and output URL to the testRunUrlsMap which is a reference to
      * an object passed from the main function to store test run urls mapped to corresponding test script.
      *
      * @param {string} data - The k6 command output data as string
-     * @param {TestResultUrlsMap} testResultUrlsMap - The map containing the script path and output URL
+     * @param {TestRunUrlsMap} testRunUrlsMap - The map containing the script path and output URL
      *
      * @returns {boolean} - Returns true if the script path and output URL were successfully extracted and added to the map. Otherwise, returns false.
      *
@@ -34554,7 +34567,7 @@ function extractTestRunUrl(data, testResultUrlsMap) {
     const outputCloudUrlMatch = output ? output.match(REGEX_EXPRESSIONS.outputCloudUrl) : null;
     const outputCloudUrl = outputCloudUrlMatch ? outputCloudUrlMatch[1] : output;
     if (scriptPath && output) {
-        testResultUrlsMap[scriptPath] = outputCloudUrl || '';
+        testRunUrlsMap[scriptPath] = outputCloudUrl || '';
         return true;
     }
     else {
@@ -34609,22 +34622,22 @@ function checkIfK6ASCIIArt(data) {
         return true;
     }
 }
-function parseK6Output(data, testResultUrlsMap, totalTestRuns) {
+function parseK6Output(data, testRunUrlsMap, totalTestRuns) {
     /*
     * This function is responsible for parsing the output of the k6 command.
     * It filters out the progress lines and logs the rest of the output.
     * It also extracts the test run URLs from the output.
     *
     * @param {Buffer} data - The k6 command output data
-    * @param {TestResultUrlsMap | null} testResultUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
+    * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
     *
     * @returns {void}
     */
     const dataString = data.toString(), lines = dataString.split('\n');
     // Extract test run URLs
-    if (testResultUrlsMap && Object.keys(testResultUrlsMap).length < totalTestRuns) {
-        if (extractTestRunUrl(dataString, testResultUrlsMap)) {
+    if (testRunUrlsMap && Object.keys(testRunUrlsMap).length < totalTestRuns) {
+        if (extractTestRunUrl(dataString, testRunUrlsMap)) {
             // Test URL was extracted successfully and added to the map. 
             // Ignore further output parsing for this data.
             return;

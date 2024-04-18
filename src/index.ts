@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs-extra';
 import { generatePRComment } from './githubHelper';
 import { parseK6Output } from './k6OutputParser';
+import { TestRunUrlsMap } from './types';
 
 const TEST_PIDS: number[] = [];
 
@@ -26,12 +27,9 @@ export async function run(): Promise<void> {
         const commands = testPaths.map(testPath => generateCommand(testPath)),
             TOTAL_TEST_RUNS = commands.length,
             TEST_RESULT_URLS_MAP = new Proxy({}, {
-                set: (target: { [key: string]: string }, key: string, value: string) => {
+                set: (target: TestRunUrlsMap, key: string, value: string) => {
                     target[key] = value;
                     if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                        core.debug('📊 URLs for all the tests gathered');
-                        core.debug(`📊 Test URLs: ${target}`);
-
                         if (isCloud) {
                             // Generate PR comment with test run URLs
                             generatePRComment(target);
