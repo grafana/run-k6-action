@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
         const failFast = core.getInput('fail-fast', { required: false }) === 'true'
         const flags = core.getInput('flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
-        const shouldCommentCloudTestRunUrlOnPR = core.getInput('comment-cloud-test-run-url-on-pr', { required: false }) === 'true'
+        const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
         const allPromises: Promise<void>[] = [];
 
         const isCloud = await isCloudIntegrationEnabled()
