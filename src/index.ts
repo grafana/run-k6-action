@@ -2,10 +2,11 @@ import * as core from '@actions/core';
 import * as glob from '@actions/glob';
 import { spawn } from 'child_process';
 import * as fs from 'fs-extra';
+import { generatePRComment } from './githubHelper';
 import { parseK6Output } from './k6OutputParser';
+import { TestRunUrlsMap } from './types';
 
-const TEST_PIDS: number[] = [],
-    TEST_RESULT_URLS_MAP: { [key: string]: string } = {};
+const TEST_PIDS: number[] = [];
 
 run()
 
@@ -20,11 +21,26 @@ export async function run(): Promise<void> {
         const failFast = core.getInput('fail-fast', { required: false }) === 'true'
         const flags = core.getInput('flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
+        const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
+        const allPromises: Promise<void>[] = [];
 
         const isCloud = await isCloudIntegrationEnabled()
 
         const commands = testPaths.map(testPath => generateCommand(testPath)),
-            TOTAL_TEST_RUNS = commands.length;
+            TOTAL_TEST_RUNS = commands.length,
+            TEST_RESULT_URLS_MAP = new Proxy({}, {
+                set: (target: TestRunUrlsMap, key: string, value: string) => {
+                    target[key] = value;
+                    if (Object.keys(target).length === TOTAL_TEST_RUNS) {
+                        if (isCloud && shouldCommentCloudTestRunUrlOnPR) {
+                            // Generate PR comment with test run URLs
+                            allPromises.push(generatePRComment(target));
+                        }
+                    }
+                    return true;
+                }
+            });
+        ;
         if (commands.length === 0) {
             throw new Error('No test files found')
         }
@@ -33,12 +49,12 @@ export async function run(): Promise<void> {
 
         if (parallel) {
             const childProcesses = [] as any[];
-            const exitPromises: Promise<void>[] = [];
+
             commands.forEach(command => {
                 const child = runCommand(command);
                 childProcesses.push(child);
                 TEST_PIDS.push(child.pid);
-                exitPromises.push(new Promise(resolve => {
+                allPromises.push(new Promise(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -64,13 +80,11 @@ export async function run(): Promise<void> {
                     });
                 }));
             });
-
-            await Promise.all(exitPromises);
         } else {
             for (const command of commands) {
                 const child = runCommand(command);
                 TEST_PIDS.push(child.pid);
-                await new Promise<void>(resolve => {
+                allPromises.push(new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -89,9 +103,10 @@ export async function run(): Promise<void> {
                         }
                         resolve();
                     });
-                });
+                }));
             }
         }
+        await Promise.all(allPromises);
 
         if (!allTestsPassed) {
             console.log('🚨 Some tests failed');
@@ -117,14 +132,14 @@ export async function run(): Promise<void> {
 
             console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
             const child = spawn(cmd, args, {
-                stdio: ['inherit'], 
+                stdio: ['inherit'],
                 detached: true,
                 env: process.env,
             });
             // Parse k6 command output and extract test run URLs if running in cloud mode. 
             // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS));  
-            
+            child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS));
+
             return child;
         }
     } catch (error) {

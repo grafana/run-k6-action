@@ -1,3 +1,3 @@
-export type TestResultUrlsMap = {
+export type TestRunUrlsMap = {
     [key: string]: string;
 };

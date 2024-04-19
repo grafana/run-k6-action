@@ -1,21 +1,36 @@
-import { TestResultUrlsMap } from './types';
+import { TestRunUrlsMap } from './types';
 
 const REGEX_EXPRESSIONS = {
     scriptPath: /^\s*script:\s*(.+)$/m,
+    // output: https://k6cloud.grafana.net/a/k6-app/runs/123
+    // output: cloud (https://k6cloud.grafana.net/a/k6-app/runs/2662254)
     output: /^\s*output:\s*(.+)$/m,
+    outputCloudUrl: /cloud\s*\((.+)\)/,
     runningIteration: /running \(.*\), \d+\/\d+ VUs, \d+ complete and \d+ interrupted iterations/g,
-    runProgress: /\[ *(\d+)% *\] *\d+ VUs/g
-}; 
+    //  default   [  20% ] 10 VUs  1.0s/5s  
+    // createBrowser   [  61% ] 035/500 VUs  0m36.5s/1m0s  5.00 iters/s
+    executionProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g,
+    // Init   [   0% ] Loading test script...
+    // Init   [   0% ] Validating script options
+    // Run    [  17% ] 14.0s/35s
+    // Run    [   0% ] Initializing
+    cloudRunExecution: /Init|Run\s+\[\s+\d+%\s+\]/g
+},
+    TEST_RUN_PROGRESS_MSG_REGEXES = [
+        REGEX_EXPRESSIONS.runningIteration,
+        REGEX_EXPRESSIONS.executionProgress,
+        REGEX_EXPRESSIONS.cloudRunExecution
+    ];
 
 
-function extractTestRunUrl(data: string, testResultUrlsMap: TestResultUrlsMap): boolean {
+function extractTestRunUrl(data: string, testRunUrlsMap: TestRunUrlsMap): boolean {
     /**
      * This function extracts the script path and output URL from the k6 output.
-     * It then adds the script path and output URL to the testResultUrlsMap which is a reference to 
+     * It then adds the script path and output URL to the testRunUrlsMap which is a reference to 
      * an object passed from the main function to store test run urls mapped to corresponding test script.
      * 
      * @param {string} data - The k6 command output data as string
-     * @param {TestResultUrlsMap} testResultUrlsMap - The map containing the script path and output URL
+     * @param {TestRunUrlsMap} testRunUrlsMap - The map containing the script path and output URL
      * 
      * @returns {boolean} - Returns true if the script path and output URL were successfully extracted and added to the map. Otherwise, returns false.
      * 
@@ -28,9 +43,11 @@ function extractTestRunUrl(data: string, testResultUrlsMap: TestResultUrlsMap): 
     // Extracting the output URL
     const outputMatch = data.match(REGEX_EXPRESSIONS.output);
     const output = outputMatch ? outputMatch[1] : null;
+    const outputCloudUrlMatch = output ? output.match(REGEX_EXPRESSIONS.outputCloudUrl) : null;
+    const outputCloudUrl = outputCloudUrlMatch ? outputCloudUrlMatch[1] : output;
 
     if (scriptPath && output) {
-        testResultUrlsMap[scriptPath] = output;
+        testRunUrlsMap[scriptPath] = outputCloudUrl || '';
         return true;
     } else {
         return false;
@@ -68,13 +85,18 @@ function checkIfK6ASCIIArt(data: string): boolean {
         return false;
     }
 
+    // During cloud execution, the ASCII art is printed with %0A instead of \n
+    data = data.replace(/%0A/g, "\n");
+
+    data = data.slice(0, data.indexOf(".io") + 3);
+
     let K6_ASCII_ART_CHARS = [
         '|', ' ', '\n', '/',
-        '‾', '(', ')',  '_',
+        '‾', '(', ')', '_',
         '.', 'i', 'o', '\\'
-      ],
-      dataChars = new Set(data);
-      
+    ],
+        dataChars = new Set(data);
+
 
     if (dataChars.size !== K6_ASCII_ART_CHARS.length) {
         return false;
@@ -88,25 +110,25 @@ function checkIfK6ASCIIArt(data: string): boolean {
     }
 }
 
-export function parseK6Output(data: Buffer, testResultUrlsMap: TestResultUrlsMap | null, totalTestRuns: number): void {
+export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | null, totalTestRuns: number): void {
     /*
     * This function is responsible for parsing the output of the k6 command. 
     * It filters out the progress lines and logs the rest of the output.
     * It also extracts the test run URLs from the output.
     * 
     * @param {Buffer} data - The k6 command output data
-    * @param {TestResultUrlsMap | null} testResultUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
+    * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
     * 
     * @returns {void}
-    */ 
+    */
 
     const dataString = data.toString(),
         lines = dataString.split('\n');
-    
+
     // Extract test run URLs
-    if (testResultUrlsMap && Object.keys(testResultUrlsMap).length < totalTestRuns) {
-        if (extractTestRunUrl(dataString, testResultUrlsMap)) {
+    if (testRunUrlsMap && Object.keys(testRunUrlsMap).length < totalTestRuns) {
+        if (extractTestRunUrl(dataString, testRunUrlsMap)) {
             // Test URL was extracted successfully and added to the map. 
             // Ignore further output parsing for this data.
             return;
@@ -118,10 +140,11 @@ export function parseK6Output(data: Buffer, testResultUrlsMap: TestResultUrlsMap
             // hence if all the test URLs are extracted, the ASCII art will not be printed. 
             return;
         }
-    }   
+    }
 
     const filteredLines = lines.filter((line) => {
-        const isRegexMatch = REGEX_EXPRESSIONS.runningIteration.test(line) || REGEX_EXPRESSIONS.runProgress.test(line);
+        const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
+
         return !isRegexMatch;
     });
 
