@@ -29,6 +29,10 @@ inputs:
     description: 'If true, comment the cloud test run URL on the pull request'
     default: "true"
     required: false
+  only-verify-scripts: 
+    description: 'If true, only check if the test scripts are valid and skip test execution'
+    default: "false"
+    required: false
 
 runs:
   using: node20
