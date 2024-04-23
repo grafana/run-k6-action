@@ -34346,6 +34346,7 @@ const child_process_1 = __nccwpck_require__(2081);
 const fs = __importStar(__nccwpck_require__(5630));
 const githubHelper_1 = __nccwpck_require__(2179);
 const k6OutputParser_1 = __nccwpck_require__(5035);
+const k6helper_1 = __nccwpck_require__(1034);
 const TEST_PIDS = [];
 run();
 /**
@@ -34359,8 +34360,28 @@ async function run() {
         const failFast = core.getInput('fail-fast', { required: false }) === 'true';
         const flags = core.getInput('flags', { required: false });
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true';
+        const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true';
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true';
         const allPromises = [];
+        core.debug(`🔍 Found following ${testPaths.length} test run files:`);
+        testPaths.forEach((testPath, index) => {
+            core.debug(`${index + 1}. ${testPath}`);
+        });
+        if (testPaths.length === 0) {
+            throw new Error('No test files found');
+        }
+        const verifiedTestPaths = await (0, k6helper_1.validateTestPaths)(testPaths);
+        if (verifiedTestPaths.length === 0) {
+            throw new Error('No valid test files found');
+        }
+        console.log(`🧪 Found ${verifiedTestPaths.length} valid K6 tests out of total ${testPaths.length} test files.`);
+        verifiedTestPaths.forEach((testPath, index) => {
+            console.log(`  ${index + 1}. ${testPath}`);
+        });
+        if (onlyVerifyScripts) {
+            console.log('🔍 Only verifying scripts. Skipping test execution');
+            return;
+        }
         const isCloud = await isCloudIntegrationEnabled();
         const commands = testPaths.map(testPath => generateCommand(testPath)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
             set: (target, key, value) => {
@@ -34375,9 +34396,6 @@ async function run() {
             }
         });
         ;
-        if (commands.length === 0) {
-            throw new Error('No test files found');
-        }
         let allTestsPassed = true;
         if (parallel) {
             const childProcesses = [];
@@ -34663,6 +34681,45 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns) {
     console.log(filteredLines.join('\n'));
 }
 exports.parseK6Output = parseK6Output;
+
+
+/***/ }),
+
+/***/ 1034:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.validateTestPaths = void 0;
+// Common helper functions used in the action 
+const child_process_1 = __nccwpck_require__(2081);
+async function validateTestPaths(testPaths) {
+    if (testPaths.length === 0) {
+        throw new Error('No test files found');
+    }
+    console.log(`🔍 Validating test run files.`);
+    const validK6TestPaths = [], command = "k6", defaultArgs = ["inspect", "--execution-requirements"];
+    const allPromises = [];
+    testPaths.forEach(async (testPath) => {
+        const args = [...defaultArgs, testPath];
+        const child = (0, child_process_1.spawn)(command, args, {
+            stdio: ['inherit', 'ignore', 'inherit'], // 'ignore' is for stdout
+            detached: false,
+        });
+        allPromises.push(new Promise(resolve => {
+            child.on('exit', (code, signal) => {
+                if (code === 0) {
+                    validK6TestPaths.push(testPath);
+                }
+                resolve();
+            });
+        }));
+    });
+    await Promise.all(allPromises);
+    return validK6TestPaths;
+}
+exports.validateTestPaths = validateTestPaths;
 
 
 /***/ }),

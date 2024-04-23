@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs-extra';
 import { generatePRComment } from './githubHelper';
 import { parseK6Output } from './k6OutputParser';
+import { validateTestPaths } from './k6helper';
 import { TestRunUrlsMap } from './types';
 
 const TEST_PIDS: number[] = [];
@@ -21,8 +22,34 @@ export async function run(): Promise<void> {
         const failFast = core.getInput('fail-fast', { required: false }) === 'true'
         const flags = core.getInput('flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
+        const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true'
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
         const allPromises: Promise<void>[] = [];
+
+        core.debug(`🔍 Found following ${testPaths.length} test run files:`);
+        testPaths.forEach((testPath, index) => {
+            core.debug(`${index + 1}. ${testPath}`);
+        });
+
+        if (testPaths.length === 0) {
+            throw new Error('No test files found')
+        }
+
+        const verifiedTestPaths = await validateTestPaths(testPaths);
+
+        if (verifiedTestPaths.length === 0) {
+            throw new Error('No valid test files found')
+        }
+
+        console.log(`🧪 Found ${verifiedTestPaths.length} valid K6 tests out of total ${testPaths.length} test files.`);
+        verifiedTestPaths.forEach((testPath, index) => {
+            console.log(`  ${index + 1}. ${testPath}`);
+        });
+
+        if (onlyVerifyScripts) {
+            console.log('🔍 Only verifying scripts. Skipping test execution');
+            return;
+        }
 
         const isCloud = await isCloudIntegrationEnabled()
 
@@ -41,9 +68,6 @@ export async function run(): Promise<void> {
                 }
             });
         ;
-        if (commands.length === 0) {
-            throw new Error('No test files found')
-        }
 
         let allTestsPassed = true;
 
