@@ -34695,6 +34695,14 @@ exports.validateTestPaths = void 0;
 // Common helper functions used in the action 
 const child_process_1 = __nccwpck_require__(2081);
 async function validateTestPaths(testPaths) {
+    /**
+     * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
+     * A test path is considered valid if the command returns an exit code of 0.
+     *
+     * @export
+     * @param {string[]} testPaths - List of test paths to validate
+     * @return {Promise<string[]>} - List of valid test paths
+     */
     if (testPaths.length === 0) {
         throw new Error('No test files found');
     }
