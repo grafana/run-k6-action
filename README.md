@@ -6,7 +6,7 @@
     style="pointer-events: none;" />
 
   <br />
-  Open source load testing tool and SaaS for ambitious engineering teams.
+  Open source performance testing tool and SaaS for ambitious engineering teams.
 
 </div>
 
