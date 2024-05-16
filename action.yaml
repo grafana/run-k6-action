@@ -1,4 +1,4 @@
-name: 'Run a Grafana k6 tests'
+name: 'Run Grafana k6 tests'
 description: 'Run Grafana k6 tests'
 
 branding:
