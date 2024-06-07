@@ -11,8 +11,6 @@
 </div>
 
 # run-k6-action
-> This GitHub Action is under active development 🧑‍🏭  
-> Please, use https://github.com/grafana/k6-action instead
 
 This action allows you to easily execute k6 tests as part of your GitHub Actions workflow. 
 
