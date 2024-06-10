@@ -22,6 +22,19 @@ jobs:
         flags: --vus 10 --duration 30s
         parallel: true
         cloud-run-locally: false
+  protocol-without-flags:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Grafana k6
+      uses: grafana/setup-k6-action@main
+      with:
+        k6-version: '0.49.0'
+    - uses: ./
+      continue-on-error: true
+      with:
+        path: |
+          ./dev/protocol*.js
   verify-scripts:
     runs-on: ubuntu-latest
     env:

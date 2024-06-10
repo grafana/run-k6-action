@@ -24,12 +24,13 @@ inputs:
     required: false
   cloud-run-locally:
     description: 'If true, run tests locally instead and upload results to Grafana Cloud k6'
+    default: "true"
     required: false
   cloud-comment-on-pr:
     description: 'If true, comment the cloud test run URL on the pull request'
     default: "true"
     required: false
-  only-verify-scripts: 
+  only-verify-scripts:
     description: 'If true, only check if the test scripts are valid and skip test execution'
     default: "false"
     required: false
