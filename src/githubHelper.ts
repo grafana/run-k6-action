@@ -136,7 +136,7 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
 
   let comment = `# Performance Test Results 🚀
   
-  Select a test run from below to view the test progress and results on Grafana Cloud K6:
+  Select a test run from below to view the test progress and results on Grafana Cloud k6:
 
   ${testRunUrls}
   `;
