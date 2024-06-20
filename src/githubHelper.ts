@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { cleanScriptPath } from './k6helper';
 import { TestRunUrlsMap } from './types';
 
 const { context } = github;
@@ -131,7 +132,7 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
 
   let testRunUrls = '';
   for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-    testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
+    testRunUrls += `🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`;
   }
 
   let comment = `# Performance Test Results 🚀

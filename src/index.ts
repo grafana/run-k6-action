@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import * as fs from 'fs-extra';
 import { generatePRComment } from './githubHelper';
 import { parseK6Output } from './k6OutputParser';
-import { validateTestPaths } from './k6helper';
+import { cleanScriptPath, validateTestPaths } from './k6helper';
 import { TestRunUrlsMap } from './types';
 
 const TEST_PIDS: number[] = [];
@@ -59,9 +59,18 @@ export async function run(): Promise<void> {
                 set: (target: TestRunUrlsMap, key: string, value: string) => {
                     target[key] = value;
                     if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                        if (isCloud && shouldCommentCloudTestRunUrlOnPR) {
-                            // Generate PR comment with test run URLs
-                            allPromises.push(generatePRComment(target));
+                        // All test run cloud urls are available
+                        if (isCloud) {
+                            // Log test run URLs to the console
+                            console.log('🌐 Test run URLs:');
+                            for (const [script, url] of Object.entries(target)) {
+                                console.log(`  ${cleanScriptPath(script)}: ${url}`);
+                            }
+
+                            if (shouldCommentCloudTestRunUrlOnPR) {
+                                // Generate PR comment with test run URLs
+                                allPromises.push(generatePRComment(target));
+                            }
                         }
                     }
                     return true;
