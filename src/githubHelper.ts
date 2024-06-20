@@ -152,7 +152,7 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
   }
 
   if (!pullRequestNumber) {
-    core.warning('Unable to get pull request number for the commit, skipping comment creation')
+    core.info('Unable to get pull request number for the commit, skipping comment creation')
     return;
   }
 
@@ -160,7 +160,7 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
     await createOrUpdateComment(pullRequestNumber, comment);
     core.debug('Comment created successfully');
   } catch (error: any) {
-    core.warning('Error creating comment on pull request');
+    core.info('Error creating comment on pull request');
     core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
     core.debug(error);
   }

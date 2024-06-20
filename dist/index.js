@@ -34294,7 +34294,7 @@ async function generatePRComment(testRunUrlsMap) {
         core.debug(error);
     }
     if (!pullRequestNumber) {
-        core.warning('Unable to get pull request number for the commit, skipping comment creation');
+        core.info('Unable to get pull request number for the commit, skipping comment creation');
         return;
     }
     try {
@@ -34302,7 +34302,7 @@ async function generatePRComment(testRunUrlsMap) {
         core.debug('Comment created successfully');
     }
     catch (error) {
-        core.warning('Error creating comment on pull request');
+        core.info('Error creating comment on pull request');
         core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
         core.debug(error);
     }
