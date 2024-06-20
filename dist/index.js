@@ -34168,6 +34168,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generatePRComment = exports.createOrUpdateComment = exports.getActionCommentId = exports.getPullRequestNumber = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const k6helper_1 = __nccwpck_require__(1034);
 const { context } = github;
 const { eventName, payload } = context;
 const { repo, owner } = context.repo;
@@ -34276,10 +34277,10 @@ async function generatePRComment(testRunUrlsMap) {
     core.debug('Generating PR comment');
     let testRunUrls = '';
     for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-        testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
+        testRunUrls += `🔗 [${(0, k6helper_1.cleanScriptPath)(scriptPath)}](${testRunUrl})\n`;
     }
     let comment = `# Performance Test Results 🚀
-  
+
   Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
   ${testRunUrls}
@@ -34289,11 +34290,11 @@ async function generatePRComment(testRunUrlsMap) {
         pullRequestNumber = await getPullRequestNumber();
     }
     catch (error) {
-        core.error(`Error getting pull request number`);
-        core.error(error);
+        core.debug(`Got following error in getting pull request number`);
+        core.debug(error);
     }
     if (!pullRequestNumber) {
-        core.debug('Pull request number not found skipping comment creation');
+        core.info('Unable to get pull request number for the commit, skipping comment creation');
         return;
     }
     try {
@@ -34301,8 +34302,9 @@ async function generatePRComment(testRunUrlsMap) {
         core.debug('Comment created successfully');
     }
     catch (error) {
-        core.error(`Error creating comment on pull request: ${pullRequestNumber}`);
-        core.error(error);
+        core.info('Error creating comment on pull request');
+        core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
+        core.debug(error);
     }
 }
 exports.generatePRComment = generatePRComment;
@@ -34387,9 +34389,17 @@ async function run() {
             set: (target, key, value) => {
                 target[key] = value;
                 if (Object.keys(target).length === TOTAL_TEST_RUNS) {
-                    if (isCloud && shouldCommentCloudTestRunUrlOnPR) {
-                        // Generate PR comment with test run URLs
-                        allPromises.push((0, githubHelper_1.generatePRComment)(target));
+                    // All test run cloud urls are available
+                    if (isCloud) {
+                        // Log test run URLs to the console
+                        console.log('🌐 Test run URLs:');
+                        for (const [script, url] of Object.entries(target)) {
+                            console.log(`  ${(0, k6helper_1.cleanScriptPath)(script)}: ${url}`);
+                        }
+                        if (shouldCommentCloudTestRunUrlOnPR) {
+                            // Generate PR comment with test run URLs
+                            allPromises.push((0, githubHelper_1.generatePRComment)(target));
+                        }
                     }
                 }
                 return true;
@@ -34708,8 +34718,8 @@ exports.parseK6Output = parseK6Output;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.validateTestPaths = void 0;
-// Common helper functions used in the action 
+exports.cleanScriptPath = exports.validateTestPaths = void 0;
+// Common helper functions used in the action
 const child_process_1 = __nccwpck_require__(2081);
 async function validateTestPaths(testPaths) {
     /**
@@ -34745,6 +34755,20 @@ async function validateTestPaths(testPaths) {
     return validK6TestPaths;
 }
 exports.validateTestPaths = validateTestPaths;
+function cleanScriptPath(scriptPath) {
+    /**
+     * Cleans the script path by removing the base directory prefix if it is present.
+     *
+     * @export
+     * @param {string} scriptPath - The script path to clean
+     * @return {string} - Cleaned script path
+     *
+     * */
+    const baseDir = process.env['GITHUB_WORKSPACE'] || '';
+    const cleanedScriptPath = scriptPath.replace(baseDir, '');
+    return cleanedScriptPath.trim();
+}
+exports.cleanScriptPath = cleanScriptPath;
 
 
 /***/ }),

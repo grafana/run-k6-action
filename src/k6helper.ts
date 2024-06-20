@@ -1,4 +1,4 @@
-// Common helper functions used in the action 
+// Common helper functions used in the action
 import { spawn } from 'child_process';
 
 export async function validateTestPaths(testPaths: string[]): Promise<string[]> {
@@ -44,4 +44,20 @@ export async function validateTestPaths(testPaths: string[]): Promise<string[]> 
     await Promise.all(allPromises);
 
     return validK6TestPaths;
+}
+
+export function cleanScriptPath(scriptPath: string): string {
+    /**
+     * Cleans the script path by removing the base directory prefix if it is present.
+     *
+     * @export
+     * @param {string} scriptPath - The script path to clean
+     * @return {string} - Cleaned script path
+     *
+     * */
+    const baseDir = process.env['GITHUB_WORKSPACE'] || '';
+    const cleanedScriptPath = scriptPath.replace(baseDir, '');
+
+    return cleanedScriptPath.trim();
+
 }

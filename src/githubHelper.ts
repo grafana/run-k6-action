@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { cleanScriptPath } from './k6helper';
 import { TestRunUrlsMap } from './types';
 
 const { context } = github;
@@ -13,9 +14,9 @@ const octokit = github.getOctokit(token);
 export async function getPullRequestNumber(): Promise<number | undefined> {
   /**
    * This function gets the open pull request number from the context of the action event.
-   * 
+   *
    * @returns {Promise<number | undefined>} - The open pull request number. Returns undefined if the pull request number is not found.
-   * 
+   *
    * @export
    */
   let commitSHA;
@@ -57,9 +58,9 @@ export async function getActionCommentId(pullRequestNumber: number): Promise<num
    * This function gets the comment ID of the action comment from the pull request.
    *
    * @param {number} pullRequestNumber - The pull request number
-   * 
+   *
    * @returns {Promise<number | undefined>} - The comment ID of the action comment. Returns undefined if the action comment is not found.
-   * 
+   *
    * @export
    */
 
@@ -82,13 +83,13 @@ export async function createOrUpdateComment(pullRequestNumber: number, commentBo
    * @param {number} pullRequestNumber - The pull request number
    * @param {number | undefined} commentId - The comment ID of the action comment. If the comment ID is undefined, a new comment is created.
    * @param {string} commentBody - The body of the comment
-   * 
+   *
    * @export
-   * 
+   *
    * @returns {Promise<void>} - Resolves when the comment is created or updated.
-   * 
+   *
    * @throws {Error} - Throws an error if the comment cannot be created or updated.
-   * 
+   *
    * */
 
   const commentId = await getActionCommentId(pullRequestNumber);
@@ -117,9 +118,9 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
   /**
    * This function posts/updates a comment containing the test run URLs if a pull request is present.
    *
-   * @param {TestRunUrlsMap} testResults - Map of test run URLs where the key is the script path 
-   *  and the value is the test run URL 
-   * 
+   * @param {TestRunUrlsMap} testResults - Map of test run URLs where the key is the script path
+   *  and the value is the test run URL
+   *
    * */
 
   if (Object.keys(testRunUrlsMap).length === 0) {
@@ -131,11 +132,11 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
 
   let testRunUrls = '';
   for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-    testRunUrls += `🔗 [${scriptPath}](${testRunUrl})\n`;
+    testRunUrls += `🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`;
   }
 
   let comment = `# Performance Test Results 🚀
-  
+
   Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
   ${testRunUrls}
@@ -146,12 +147,12 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
   try {
     pullRequestNumber = await getPullRequestNumber();
   } catch (error: any) {
-    core.error(`Error getting pull request number`);
-    core.error(error);
+    core.debug(`Got following error in getting pull request number`);
+    core.debug(error);
   }
 
   if (!pullRequestNumber) {
-    core.debug('Pull request number not found skipping comment creation');
+    core.info('Unable to get pull request number for the commit, skipping comment creation')
     return;
   }
 
@@ -159,7 +160,8 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
     await createOrUpdateComment(pullRequestNumber, comment);
     core.debug('Comment created successfully');
   } catch (error: any) {
-    core.error(`Error creating comment on pull request: ${pullRequestNumber}`);
-    core.error(error);
+    core.info('Error creating comment on pull request');
+    core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
+    core.debug(error);
   }
 }
