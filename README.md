@@ -22,15 +22,15 @@ It is a wrapper over `k6 run`, with support for globs, parallel execution, fail-
 
 The following inputs can be used as `step.with` key:
 
-| Name | Type | Required | Description 
-| --- | --- | --- | --- |
-| `path` | string | `true` | Glob pattern to select one or multiple test scripts to run. <br/> e.g. `./tests/api*.js` <br/> One can also supply multiple patterns by separating them with new line.<br/><code>path: \|<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;./tests/api*.js<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;./tests/app*.js</code>
-| `cloud-run-locally` | boolean | `false` | If `true`, the tests are executed locally and the results are uploaded to Grafana Cloud k6
-| `parallel` | boolean | `false` | If `true` and multiple tests are executed, all them run in parallel. 
-| `fail-fast` | boolean | `false` | If `true`, the whole pipeline fails as soon as the first test fails 
-| `flags` | string | `false` | Additional flags to be passed on to the `k6 run` command.<br/>e.g. `--vus 10 --duration 20s`
-| `cloud-comment-on-pr` | boolean | `false` | If `true`, the workflow comments a link to the cloud test run on the pull request (if present)
-| `only-verify-scripts` | boolean | `false` | If `true`, only check if the test scripts are valid and skip the test execution'
+| Name | Type | Required | Default | Description 
+| --- | --- | --- | --- | --- |
+| `path` | string | `true` | `''` | Glob pattern to select one or multiple test scripts to run. <br/> e.g. `./tests/api*.js` <br/> One can also supply multiple patterns by separating them with new line.<br/><code>path: \|<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;./tests/api*.js<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;./tests/app*.js</code>
+| `cloud-run-locally` | boolean | `false` | `true` | If `true`, the tests are executed locally and the results are uploaded to Grafana Cloud k6
+| `parallel` | boolean | `false` | `false` | If `true` and multiple tests are executed, all them run in parallel. 
+| `fail-fast` | boolean | `false` | `false` | If `true`, the whole pipeline fails as soon as the first test fails 
+| `flags` | string | `false` | `''` | Additional flags to be passed on to the `k6 run` command.<br/>e.g. `--vus 10 --duration 20s`
+| `cloud-comment-on-pr` | boolean | `false` | `true` | If `true`, the workflow comments a link to the cloud test run on the pull request (if present)
+| `only-verify-scripts` | boolean | `false` | `false` | If `true`, only check if the test scripts are valid and skip the test execution'
 
 ## Usage
 
