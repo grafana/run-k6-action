@@ -1,7 +1,7 @@
 // Common helper functions used in the action
 import { spawn } from 'child_process';
 
-export async function validateTestPaths(testPaths: string[]): Promise<string[]> {
+export async function validateTestPaths(testPaths: string[], flags: string[]): Promise<string[]> {
     /**
      * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
      * A test path is considered valid if the command returns an exit code of 0.
@@ -19,7 +19,7 @@ export async function validateTestPaths(testPaths: string[]): Promise<string[]> 
 
     const validK6TestPaths: string[] = [],
         command = "k6",
-        defaultArgs = ["inspect", "--execution-requirements"];
+        defaultArgs = ["inspect", "--execution-requirements", ...flags];
 
     const allPromises = [] as any[];
 
