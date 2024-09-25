@@ -29,6 +29,7 @@ The following inputs can be used as `step.with` key:
 | `parallel` | boolean | `false` | `false` | If `true` and multiple tests are executed, all them run in parallel. 
 | `fail-fast` | boolean | `false` | `false` | If `true`, the whole pipeline fails as soon as the first test fails 
 | `flags` | string | `false` | `''` | Additional flags to be passed on to the `k6 run` command.<br/>e.g. `--vus 10 --duration 20s`
+| `inspect-flags` | string | `false` | `''` | Additional flags to be passed on to the `k6 inspect` command.<br/>e.g. `--compatibility-mode experimental_enhanced`
 | `cloud-comment-on-pr` | boolean | `false` | `true` | If `true`, the workflow comments a link to the cloud test run on the pull request (if present)
 | `only-verify-scripts` | boolean | `false` | `false` | If `true`, only check if the test scripts are valid and skip the test execution'
 
@@ -108,7 +109,7 @@ jobs:
           path: |
             ./tests/api*.js
             ./tests/app*.js
-          flags: --vus 10 --duration 20s # optional: flags to pass to to each k6 test (default: none)
+          flags: --vus 10 --duration 20s # optional: flags to pass to each k6 test (default: none)
           parallel: true # optional: run tests in parallel (default: false)
           fail-fast: false # optional: fail the step early if any test fails (default: true)
 ```
@@ -133,3 +134,25 @@ Comment Grafana cloud k6 test URL on PR
     width="600"
     style="pointer-events: none;" />
 </div>
+
+Typescript [Compatibility Mode](https://grafana.com/docs/k6/latest/using-k6/javascript-typescript-compatibility-mode/#javascript-and-typescript-compatibility-mode)
+
+```yaml
+on:
+  push:
+
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: grafana/setup-k6-action@v1
+          browser: true
+      - uses: grafana/run-k6-action@v1
+        with:
+          path: |
+            ./tests/api*.ts
+            ./tests/app*.ts
+          flags: --compatibility-mode experimental_enhanced # optional: flags to pass to each k6 test (default: none)
+          inspect-flags: --compatibility-mode experimental_enhanced # optional: flags to pass to each k6 test  validation (default: none)
+```
