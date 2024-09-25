@@ -34365,7 +34365,9 @@ async function run() {
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true';
         const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true';
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true';
+        const debug = core.getInput('debug', { required: false }) === 'true';
         const allPromises = [];
+        core.debug(`Flag to show k6 progress output set to: ${debug}`);
         core.debug(`🔍 Found following ${testPaths.length} test run files:`);
         testPaths.forEach((testPath, index) => {
             core.debug(`${index + 1}. ${testPath}`);
@@ -34406,7 +34408,6 @@ async function run() {
                 return true;
             }
         });
-        ;
         let allTestsPassed = true;
         if (parallel) {
             const childProcesses = [];
@@ -34517,7 +34518,7 @@ async function run() {
             });
             // Parse k6 command output and extract test run URLs if running in cloud mode.
             // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS));
+            child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
             return child;
         }
     }
@@ -34580,7 +34581,7 @@ const REGEX_EXPRESSIONS = {
     output: /^\s*output:\s*(.+)$/m,
     outputCloudUrl: /cloud\s*\((.+)\)/,
     runningIteration: /running \(.*\), \d+\/\d+ VUs, \d+ complete and \d+ interrupted iterations/g,
-    //  default   [  20% ] 10 VUs  1.0s/5s  
+    //  default   [  20% ] 10 VUs  1.0s/5s
     // createBrowser   [  61% ] 035/500 VUs  0m36.5s/1m0s  5.00 iters/s
     executionProgress: /\[\s*(\d+)%\s*\]\s*\d+(\/\d+)? VUs/g,
     // Init   [   0% ] Loading test script...
@@ -34669,7 +34670,7 @@ function checkIfK6ASCIIArt(data) {
         return true;
     }
 }
-function parseK6Output(data, testRunUrlsMap, totalTestRuns) {
+function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
     /*
     * This function is responsible for parsing the output of the k6 command.
     * It filters out the progress lines and logs the rest of the output.
@@ -34678,35 +34679,38 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns) {
     * @param {Buffer} data - The k6 command output data
     * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
+    * @param {boolean} debug - A flag to determine if the k6 progress output should be shown or not.
     *
     * @returns {void}
     */
     const dataString = data.toString(), lines = dataString.split('\n');
     // Extract test run URLs
     if (testRunUrlsMap && Object.keys(testRunUrlsMap).length < totalTestRuns) {
-        if (extractTestRunUrl(dataString, testRunUrlsMap)) {
-            // Test URL was extracted successfully and added to the map. 
-            // Ignore further output parsing for this data.
-            return;
-        }
-        if (checkIfK6ASCIIArt(dataString)) {
-            // Ignore the k6 ASCII art.
-            // Checking the k6 ASCII art here because it is printed at the start of execution, 
-            // hence if all the test URLs are extracted, the ASCII art will not be printed. 
+        const testRunUrlExtracted = extractTestRunUrl(dataString, testRunUrlsMap), k6ASCIIArt = checkIfK6ASCIIArt(dataString);
+        if ((testRunUrlExtracted || k6ASCIIArt) && !debug) {
+            /*
+                If either the test run URL was extracted successfully or the k6 ASCII art was found,
+                and the k6 progress output is not to be shown, then return.
+            */
             return;
         }
     }
-    const filteredLines = lines.filter((line) => {
-        const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
-        return !isRegexMatch;
-    });
-    if (filteredLines.length < lines.length) {
-        // ignore empty lines only when progress lines output was ignored.
-        if (filteredLines.join("") === "") {
-            return;
-        }
+    if (debug) {
+        console.log(dataString);
     }
-    console.log(filteredLines.join('\n'));
+    else {
+        const filteredLines = lines.filter((line) => {
+            const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
+            return !isRegexMatch;
+        });
+        if (filteredLines.length < lines.length) {
+            // ignore empty lines only when progress lines output was ignored.
+            if (filteredLines.join("") === "") {
+                return;
+            }
+        }
+        console.log(filteredLines.join('\n'));
+    }
 }
 exports.parseK6Output = parseK6Output;
 

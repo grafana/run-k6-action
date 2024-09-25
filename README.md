@@ -1,5 +1,5 @@
 <div align="center">
-  
+
   <img
     src="./images/k6.gif"
     width="600"
@@ -12,7 +12,7 @@
 
 # run-k6-action
 
-This action allows you to easily execute k6 tests as part of your GitHub Actions workflow. 
+This action allows you to easily execute k6 tests as part of your GitHub Actions workflow.
 
 It is a wrapper over `k6 run`, with support for globs, parallel execution, fail-fast, and many other features.
 
@@ -21,6 +21,7 @@ It is a wrapper over `k6 run`, with support for globs, parallel execution, fail-
 ## Inputs
 
 The following inputs can be used as `step.with` key:
+
 
 | Name | Type | Required | Default | Description 
 | --- | --- | --- | --- | --- |
@@ -31,11 +32,12 @@ The following inputs can be used as `step.with` key:
 | `flags` | string | `false` | `''` | Additional flags to be passed on to the `k6 run` command.<br/>e.g. `--vus 10 --duration 20s`
 | `inspect-flags` | string | `false` | `''` | Additional flags to be passed on to the `k6 inspect` command.<br/>e.g. `--compatibility-mode experimental_enhanced`
 | `cloud-comment-on-pr` | boolean | `false` | `true` | If `true`, the workflow comments a link to the cloud test run on the pull request (if present)
-| `only-verify-scripts` | boolean | `false` | `false` | If `true`, only check if the test scripts are valid and skip the test execution'
+| `only-verify-scripts` | boolean | `false` | `false` | If `true`, only check if the test scripts are valid and skip the test execution'                                                                                                                                                                                                                    |
+| `debug`               | boolean | `false`  | `false` | If true, the output from k6 will be shown in the action logs, else only the summary will be shown.                                                                                                                                                                                                   |
 
 ## Usage
 
-Following are some examples of using the workflow. 
+Following are some examples of using the workflow.
 
 ### Basic
 
@@ -114,7 +116,7 @@ jobs:
           fail-fast: false # optional: fail the step early if any test fails (default: true)
 ```
 
-Comment Grafana cloud k6 test URL on PR 
+Comment Grafana cloud k6 test URL on PR
 
 ```yaml
 - uses: grafana/run-k6-action@v1
