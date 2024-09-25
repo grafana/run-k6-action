@@ -34,7 +34,7 @@ inputs:
     description: 'If true, only check if the test scripts are valid and skip test execution'
     default: "false"
     required: false
-  show-k6-progress-output:
+  debug:
     description: 'If true, the output from k6 will be shown in the action logs, else only the summary will be shown'
     default: "false"
     required: false

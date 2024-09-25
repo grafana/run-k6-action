@@ -24,10 +24,10 @@ export async function run(): Promise<void> {
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
         const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true'
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
-        const showK6ProgressOutput = core.getInput('show-k6-progress-output', { required: false }) === 'true'
+        const debug = core.getInput('debug', { required: false }) === 'true'
         const allPromises: Promise<void>[] = [];
 
-        core.debug(`Flag to show k6 progress output set to: ${showK6ProgressOutput}`);
+        core.debug(`Flag to show k6 progress output set to: ${debug}`);
 
         core.debug(`🔍 Found following ${testPaths.length} test run files:`);
         testPaths.forEach((testPath, index) => {
@@ -193,7 +193,7 @@ export async function run(): Promise<void> {
             });
             // Parse k6 command output and extract test run URLs if running in cloud mode.
             // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, showK6ProgressOutput));
+            child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
 
             return child;
         }

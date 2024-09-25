@@ -110,7 +110,7 @@ function checkIfK6ASCIIArt(data: string): boolean {
     }
 }
 
-export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | null, totalTestRuns: number, showK6ProgressOutput: boolean): void {
+export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | null, totalTestRuns: number, debug: boolean): void {
     /*
     * This function is responsible for parsing the output of the k6 command.
     * It filters out the progress lines and logs the rest of the output.
@@ -119,7 +119,7 @@ export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | nul
     * @param {Buffer} data - The k6 command output data
     * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
-    * @param {boolean} showK6ProgressOutput - A flag to determine if the k6 progress output should be shown or not.
+    * @param {boolean} debug - A flag to determine if the k6 progress output should be shown or not.
     *
     * @returns {void}
     */
@@ -132,7 +132,7 @@ export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | nul
         const testRunUrlExtracted = extractTestRunUrl(dataString, testRunUrlsMap),
             k6ASCIIArt = checkIfK6ASCIIArt(dataString);
 
-        if ((testRunUrlExtracted || k6ASCIIArt) && !showK6ProgressOutput) {
+        if ((testRunUrlExtracted || k6ASCIIArt) && !debug) {
             /*
                 If either the test run URL was extracted successfully or the k6 ASCII art was found,
                 and the k6 progress output is not to be shown, then return.
@@ -141,7 +141,7 @@ export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | nul
         }
     }
 
-    if (showK6ProgressOutput) {
+    if (debug) {
         console.log(dataString);
     } else {
         const filteredLines = lines.filter((line) => {
