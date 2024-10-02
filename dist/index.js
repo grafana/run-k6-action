@@ -34696,7 +34696,7 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
         }
     }
     if (debug) {
-        console.log(dataString);
+        process.stdout.write(data);
     }
     else {
         const filteredLines = lines.filter((line) => {
@@ -34709,7 +34709,7 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
                 return;
             }
         }
-        console.log(filteredLines.join('\n'));
+        process.stdout.write(filteredLines.join('\n'));
     }
 }
 exports.parseK6Output = parseK6Output;

@@ -142,7 +142,7 @@ export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | nul
     }
 
     if (debug) {
-        console.log(dataString);
+        process.stdout.write(data);
     } else {
         const filteredLines = lines.filter((line) => {
             const isRegexMatch = TEST_RUN_PROGRESS_MSG_REGEXES.some((regex) => regex.test(line));
@@ -156,6 +156,6 @@ export function parseK6Output(data: Buffer, testRunUrlsMap: TestRunUrlsMap | nul
                 return;
             }
         }
-        console.log(filteredLines.join('\n'))
+        process.stdout.write(filteredLines.join('\n'))
     }
 }
