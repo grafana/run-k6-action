@@ -34361,6 +34361,7 @@ async function run() {
         const parallel = core.getInput('parallel', { required: false }) === 'true';
         const failFast = core.getInput('fail-fast', { required: false }) === 'true';
         const flags = core.getInput('flags', { required: false });
+        const inspectFlags = core.getInput('inspect-flags', { required: false });
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true';
         const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true';
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true';
@@ -34374,7 +34375,7 @@ async function run() {
         if (testPaths.length === 0) {
             throw new Error('No test files found');
         }
-        const verifiedTestPaths = await (0, k6helper_1.validateTestPaths)(testPaths);
+        const verifiedTestPaths = await (0, k6helper_1.validateTestPaths)(testPaths, inspectFlags ? inspectFlags.split(' ') : []);
         if (verifiedTestPaths.length === 0) {
             throw new Error('No valid test files found');
         }
@@ -34725,7 +34726,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.cleanScriptPath = exports.validateTestPaths = void 0;
 // Common helper functions used in the action
 const child_process_1 = __nccwpck_require__(2081);
-async function validateTestPaths(testPaths) {
+async function validateTestPaths(testPaths, flags) {
     /**
      * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
      * A test path is considered valid if the command returns an exit code of 0.
@@ -34738,7 +34739,7 @@ async function validateTestPaths(testPaths) {
         throw new Error('No test files found');
     }
     console.log(`🔍 Validating test run files.`);
-    const validK6TestPaths = [], command = "k6", defaultArgs = ["inspect", "--execution-requirements"];
+    const validK6TestPaths = [], command = "k6", defaultArgs = ["inspect", "--execution-requirements", ...flags];
     const allPromises = [];
     testPaths.forEach(async (testPath) => {
         const args = [...defaultArgs, testPath];

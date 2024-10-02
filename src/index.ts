@@ -21,6 +21,7 @@ export async function run(): Promise<void> {
         const parallel = core.getInput('parallel', { required: false }) === 'true'
         const failFast = core.getInput('fail-fast', { required: false }) === 'true'
         const flags = core.getInput('flags', { required: false })
+        const inspectFlags = core.getInput('inspect-flags', { required: false })
         const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
         const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true'
         const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
@@ -38,7 +39,11 @@ export async function run(): Promise<void> {
             throw new Error('No test files found')
         }
 
-        const verifiedTestPaths = await validateTestPaths(testPaths);
+                
+        const verifiedTestPaths = await validateTestPaths(
+            testPaths,
+            inspectFlags ? inspectFlags.split(' ') : []
+        );
 
         if (verifiedTestPaths.length === 0) {
             throw new Error('No valid test files found')
