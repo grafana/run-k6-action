@@ -41,7 +41,7 @@ jobs:
         with:
           path: |
             ./dev/protocol.js
-          flags: --vus 10 --duration 30s
+          flags: --vus 10 --duration 30s --out=test
           debug: true
   verify-scripts:
     runs-on: ubuntu-latest
