@@ -194,6 +194,7 @@ export async function run(): Promise<void> {
             // Parse k6 command output and extract test run URLs if running in cloud mode.
             // Also, print the output to the console, excluding the progress lines.
             child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
+            child.stderr?.on('data', (data) => console.error(`🚨 ${data.toString()}`));
 
             return child;
         }
