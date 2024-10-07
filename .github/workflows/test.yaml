@@ -36,6 +36,7 @@ jobs:
             ./dev/protocol.js
           flags: --vus 10 --duration 10m
           cloud-run-locally: false
+          debug: true
   protocol-without-flags:
     runs-on: ubuntu-latest
     steps:
