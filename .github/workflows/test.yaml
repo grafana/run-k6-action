@@ -20,6 +20,22 @@ jobs:
           flags: --vus 10 --duration 30s
           parallel: true
           cloud-run-locally: false
+  protocol-long:
+    runs-on: ubuntu-latest
+    env:
+      K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+      K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Grafana k6
+        uses: grafana/setup-k6-action@v1
+      - uses: ./
+        continue-on-error: true
+        with:
+          path: |
+            ./dev/protocol.js
+          flags: --vus 10 --duration 10m
+          cloud-run-locally: false
   protocol-without-flags:
     runs-on: ubuntu-latest
     steps:
