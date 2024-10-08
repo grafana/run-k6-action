@@ -34519,6 +34519,7 @@ async function run() {
             // Parse k6 command output and extract test run URLs if running in cloud mode.
             // Also, print the output to the console, excluding the progress lines.
             child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
+            child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
             return child;
         }
     }
@@ -34696,7 +34697,7 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
         }
     }
     if (debug) {
-        console.log(dataString);
+        process.stdout.write(data);
     }
     else {
         const filteredLines = lines.filter((line) => {
@@ -34709,7 +34710,7 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
                 return;
             }
         }
-        console.log(filteredLines.join('\n'));
+        process.stdout.write(filteredLines.join('\n'));
     }
 }
 exports.parseK6Output = parseK6Output;
