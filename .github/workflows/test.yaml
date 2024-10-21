@@ -61,12 +61,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@v1
-      - uses: ./
+      - uses: grafana/run-k6-action@v1.1.2
         continue-on-error: true
         with:
+          debug: true
           path: |
             ./dev/env-var.js
-          flags: --env TEST_VAL=hello-from-cli
+          flags: --env TEST_VAL=hello-from-cli --env URL=http://test.k6.io
           cloud-run-locally: false
 
   env-var-system-env:
@@ -75,10 +76,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@v1
-      - uses: ./
+      - uses: grafana/run-k6-action@v1.1.2
         env:
           TEST_VAL: hello-from-env
+          URL: http://test.k6.io
         with:
+          debug: true
           path: |
             ./dev/env-var.js
           cloud-run-locally: false
