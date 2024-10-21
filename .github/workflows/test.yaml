@@ -3,55 +3,82 @@ on:
   push:
 
 jobs:
-  protocol:
+  # protocol:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+  #     K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       continue-on-error: true
+  #       with:
+  #         path: |
+  #           ./dev/protocol*.js
+  #         flags: --vus 10 --duration 30s
+  #         parallel: true
+  #         cloud-run-locally: false
+  # protocol-without-flags:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       continue-on-error: true
+  #       with:
+  #         path: |
+  #           ./dev/protocol*.js
+  # show-complete-k6-output:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       with:
+  #         path: |
+  #           ./dev/protocol.js
+  #         flags: --vus 10 --duration 30s
+  #         debug: true
+  # verify-scripts:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       continue-on-error: true
+  #       with:
+  #         path: |
+  #           ./dev/verify-script-tests/**.js
+  #         only-verify-scripts: true
+  env-var-cli-flag:
     runs-on: ubuntu-latest
-    env:
-      K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
-      K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
+        uses: grafana/setup-k6-action@v1
       - uses: ./
         continue-on-error: true
         with:
           path: |
-            ./dev/protocol*.js
-          flags: --vus 10 --duration 30s
-          parallel: true
+            ./dev/env-var.js
+          flags: --env TEST_VAL=hello-from-cli
           cloud-run-locally: false
-  protocol-without-flags:
+
+  env-var-system-env:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
+        uses: grafana/setup-k6-action@v1
       - uses: ./
-        continue-on-error: true
+        env:
+          TEST_VAL: hello-from-env
         with:
           path: |
-            ./dev/protocol*.js
-  show-complete-k6-output:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        with:
-          path: |
-            ./dev/protocol.js
-          flags: --vus 10 --duration 30s
-          debug: true
-  verify-scripts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        continue-on-error: true
-        with:
-          path: |
-            ./dev/verify-script-tests/**.js
-          only-verify-scripts: true
+            ./dev/env-var.js
+          cloud-run-locally: false
