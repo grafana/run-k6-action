@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@v1
-      - uses: grafana/run-k6-action@v1.1.2
+      - uses: ./
         continue-on-error: true
         with:
           debug: true
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@v1
-      - uses: grafana/run-k6-action@v1.1.2
+      - uses: ./
         env:
           TEST_VAL: hello-from-env
           URL: http://test.k6.io

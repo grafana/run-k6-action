@@ -1,8 +1,9 @@
 import { sleep } from 'k6';
 import http from 'k6/http';
 
+console.log(`Log in the init context: ${__ENV.TEST_VAL}`);
+
 export default function () {
-    console.log(`Test env variable value is : ${__ENV.TEST_VAL}` )
-  http.get(__ENV.URL);
+ http.get(__ENV.URL);
   sleep(1);
 }
