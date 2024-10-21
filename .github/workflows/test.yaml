@@ -68,6 +68,7 @@ jobs:
           path: |
             ./dev/env-var.js
           flags: --env TEST_VAL=hello-from-cli --env URL=http://test.k6.io
+          inspect-flags: --env TEST_VAL=hello-from-cli --env URL=http://test.k6.io
           cloud-run-locally: false
 
   env-var-system-env:
@@ -84,4 +85,5 @@ jobs:
           debug: true
           path: |
             ./dev/env-var.js
+          inspect-flags: --include-system-env-vars
           cloud-run-locally: false
