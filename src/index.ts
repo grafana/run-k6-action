@@ -124,7 +124,7 @@ export async function run(): Promise<void> {
             for (const command of commands) {
                 const child = runCommand(command);
                 TEST_PIDS.push(child.pid);
-                allPromises.push(new Promise<void>(resolve => {
+                await new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -143,7 +143,7 @@ export async function run(): Promise<void> {
                         }
                         resolve();
                     });
-                }));
+                });
             }
         }
         await Promise.all(allPromises);
