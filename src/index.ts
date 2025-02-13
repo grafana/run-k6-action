@@ -156,7 +156,7 @@ export async function run(): Promise<void> {
         function generateCommand(path: string): string {
             let command;
             const args = [
-                // `--address=""`, // Disable the REST API. THIS DOESN'T WORK???? TODO: Investigate
+                `--address=`,
                 ...(flags ? flags.split(' ') : []),
             ]
 
