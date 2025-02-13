@@ -7,7 +7,7 @@ const { context } = github;
 const { eventName, payload } = context;
 const { repo, owner } = context.repo;
 
-const WATERMARK = `<!-- K6 GitHub Action Comment: ${context.job} -->\n`;
+const WATERMARK = `<!-- k6 GitHub Action Comment: ${context.job} -->\n`;
 const token = core.getInput('github-token', { required: true });
 const octokit = github.getOctokit(token);
 
