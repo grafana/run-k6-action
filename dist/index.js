@@ -34172,7 +34172,7 @@ const k6helper_1 = __nccwpck_require__(1034);
 const { context } = github;
 const { eventName, payload } = context;
 const { repo, owner } = context.repo;
-const WATERMARK = `<!-- K6 GitHub Action Comment: ${context.job} -->\n`;
+const WATERMARK = `<!-- k6 GitHub Action Comment: ${context.job} -->\n`;
 const token = core.getInput('github-token', { required: true });
 const octokit = github.getOctokit(token);
 async function getPullRequestNumber() {
@@ -34379,7 +34379,7 @@ async function run() {
         if (verifiedTestPaths.length === 0) {
             throw new Error('No valid test files found');
         }
-        console.log(`🧪 Found ${verifiedTestPaths.length} valid K6 tests out of total ${testPaths.length} test files.`);
+        console.log(`🧪 Found ${verifiedTestPaths.length} valid k6 tests out of total ${testPaths.length} test files.`);
         verifiedTestPaths.forEach((testPath, index) => {
             console.log(`  ${index + 1}. ${testPath}`);
         });
