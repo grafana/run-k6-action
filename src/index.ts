@@ -49,7 +49,7 @@ export async function run(): Promise<void> {
             throw new Error('No valid test files found')
         }
 
-        console.log(`🧪 Found ${verifiedTestPaths.length} valid K6 tests out of total ${testPaths.length} test files.`);
+        console.log(`🧪 Found ${verifiedTestPaths.length} valid k6 tests out of total ${testPaths.length} test files.`);
         verifiedTestPaths.forEach((testPath, index) => {
             console.log(`  ${index + 1}. ${testPath}`);
         });
