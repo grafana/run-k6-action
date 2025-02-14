@@ -55,3 +55,16 @@ jobs:
           path: |
             ./dev/verify-script-tests/**.js
           only-verify-scripts: true
+  env-var-test:
+    runs-on: ubuntu-latest
+    env:
+      TEST_SYSTEM_ENV_VAR: "test-system-env-var-value"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Grafana k6
+        uses: grafana/setup-k6-action@main
+      - uses: ./
+        with:
+          path: |
+            ./dev/env-var-test.js
+          flags: --vus 1 --duration 1s --env TEST_FLAG_ENV_VAR=test-flag-env-var-value -e TEST_SYSTEM_ENV_VAR_E=test-cli-e-env-var-value
