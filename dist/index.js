@@ -34448,7 +34448,7 @@ async function run() {
             for (const command of commands) {
                 const child = runCommand(command);
                 TEST_PIDS.push(child.pid);
-                allPromises.push(new Promise(resolve => {
+                await new Promise(resolve => {
                     child.on('exit', (code, signal) => {
                         const index = TEST_PIDS.indexOf(child.pid);
                         if (index > -1) {
@@ -34469,7 +34469,7 @@ async function run() {
                         }
                         resolve();
                     });
-                }));
+                });
             }
         }
         await Promise.all(allPromises);
