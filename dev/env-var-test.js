@@ -8,9 +8,11 @@ export const options = {
 
 
 export default function () {
+    console.log("Value of configFile", __ENV.configFile)
  check(__ENV, {
     'System env var': (env) => env.TEST_SYSTEM_ENV_VAR === 'test-system-env-var-value',
     'CLI --env flag set': (env) => env.TEST_FLAG_ENV_VAR === 'test-flag-env-var-value',
     'CLI -e flag set': (env) => env.TEST_SYSTEM_ENV_VAR_E === 'test-cli-e-env-var-value',
+    'CLI -e configFile flag set': (env) => env.configFile === 'test-value',
  })
 }
