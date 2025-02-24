@@ -34355,14 +34355,14 @@ run();
 async function run() {
     try {
         const testPaths = await (0, utils_1.findTestsToRun)(core.getInput('path', { required: true }));
-        const parallel = core.getBooleanInput('parallel', { required: false });
-        const failFast = core.getBooleanInput('fail-fast', { required: false });
-        const flags = core.getInput('flags', { required: false });
-        const inspectFlags = core.getInput('inspect-flags', { required: false });
-        const cloudRunLocally = core.getBooleanInput('cloud-run-locally', { required: false });
-        const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts', { required: false });
-        const shouldCommentCloudTestRunUrlOnPR = core.getBooleanInput('cloud-comment-on-pr', { required: false });
-        const debug = core.getBooleanInput('debug', { required: false });
+        const parallel = core.getBooleanInput('parallel');
+        const failFast = core.getBooleanInput('fail-fast');
+        const flags = core.getInput('flags');
+        const inspectFlags = core.getInput('inspect-flags');
+        const cloudRunLocally = core.getBooleanInput('cloud-run-locally');
+        const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts');
+        const shouldCommentCloudTestRunUrlOnPR = core.getBooleanInput('cloud-comment-on-pr');
+        const debug = core.getBooleanInput('debug');
         const allPromises = [];
         core.debug(`Flag to show k6 progress output set to: ${debug}`);
         core.debug(`🔍 Found following ${testPaths.length} test run files:`);
