@@ -19,14 +19,15 @@ run()
 export async function run(): Promise<void> {
     try {
         const testPaths = await findTestsToRun(core.getInput('path', { required: true }))
-        const parallel = core.getInput('parallel', { required: false }) === 'true'
-        const failFast = core.getInput('fail-fast', { required: false }) === 'true'
+        const parallel = core.getBooleanInput('parallel', { required: false })
+        const failFast = core.getBooleanInput('fail-fast', { required: false })
         const flags = core.getInput('flags', { required: false })
         const inspectFlags = core.getInput('inspect-flags', { required: false })
-        const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true'
-        const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true'
-        const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true'
-        const debug = core.getInput('debug', { required: false }) === 'true'
+        const cloudRunLocally = core.getBooleanInput('cloud-run-locally', { required: false })
+        const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts', { required: false })
+        const shouldCommentCloudTestRunUrlOnPR = core.getBooleanInput('cloud-comment-on-pr', { required: false })
+        const debug = core.getBooleanInput('debug', { required: false })
+
         const allPromises: Promise<void>[] = [];
 
         core.debug(`Flag to show k6 progress output set to: ${debug}`);
