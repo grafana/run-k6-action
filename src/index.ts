@@ -1,10 +1,8 @@
 import * as core from '@actions/core';
 
-import { spawn } from 'child_process';
 
 import { generatePRComment } from './githubHelper';
-import { parseK6Output } from './k6OutputParser';
-import { cleanScriptPath, generateK6RunCommand, isCloudIntegrationEnabled, validateTestPaths } from './k6helper';
+import { cleanScriptPath, executeRunK6Command, generateK6RunCommand, isCloudIntegrationEnabled, validateTestPaths } from './k6helper';
 import { TestRunUrlsMap } from './types';
 import { findTestsToRun } from './utils';
 
@@ -93,7 +91,7 @@ export async function run(): Promise<void> {
             const childProcesses = [] as any[];
 
             commands.forEach(command => {
-                const child = runCommand(command);
+                const child = executeRunK6Command(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
                 childProcesses.push(child);
                 TEST_PIDS.push(child.pid);
                 allPromises.push(new Promise(resolve => {
@@ -124,7 +122,7 @@ export async function run(): Promise<void> {
             });
         } else {
             for (const command of commands) {
-                const child = runCommand(command);
+                const child = executeRunK6Command(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
                 TEST_PIDS.push(child.pid);
                 await new Promise<void>(resolve => {
                     child.on('exit', (code: number, signal: string) => {
@@ -155,26 +153,6 @@ export async function run(): Promise<void> {
             process.exit(1);
         }
 
-
-
-        function runCommand(command: string): any {
-            const parts = command.split(' ');
-            const cmd = parts[0];
-            const args = parts.slice(1);
-
-            console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
-            const child = spawn(cmd, args, {
-                stdio: ['inherit'],
-                detached: true,
-                env: process.env,
-            });
-            // Parse k6 command output and extract test run URLs if running in cloud mode.
-            // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => parseK6Output(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
-            child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
-
-            return child;
-        }
     } catch (error) {
         if (error instanceof Error) core.setFailed(error.message)
     }

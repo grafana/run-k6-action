@@ -1,5 +1,7 @@
 import * as glob from '@actions/glob';
+
 import * as fs from 'fs-extra';
+
 /**
  * Checks if a given path is a directory.
  *

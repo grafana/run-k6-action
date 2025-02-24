@@ -1,15 +1,18 @@
 // Common helper functions used in the action
 import * as core from '@actions/core';
 import { spawn } from 'child_process';
+import { parseK6Output } from './k6OutputParser';
+import { TestRunUrlsMap } from './types';
 
-    /**
-     * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
-     * A test path is considered valid if the command returns an exit code of 0.
-     *
-     * @export
-     * @param {string[]} testPaths - List of test paths to validate
-     * @return {Promise<string[]>} - List of valid test paths
-     */
+
+/**
+ * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
+ * A test path is considered valid if the command returns an exit code of 0.
+ *
+ * @export
+ * @param {string[]} testPaths - List of test paths to validate
+ * @return {Promise<string[]>} - List of valid test paths
+ */
 export async function validateTestPaths(testPaths: string[], flags: string[]): Promise<string[]> {
 
     if (testPaths.length === 0) {
@@ -47,21 +50,20 @@ export async function validateTestPaths(testPaths: string[], flags: string[]): P
     return validK6TestPaths;
 }
 
-    /**
-     * Cleans the script path by removing the base directory prefix if it is present.
-     *
-     * @export
-     * @param {string} scriptPath - The script path to clean
-     * @return {string} - Cleaned script path
-     *
-     * */
+/**
+ * Cleans the script path by removing the base directory prefix if it is present.
+ *
+ * @export
+ * @param {string} scriptPath - The script path to clean
+ * @return {string} - Cleaned script path
+ *
+ * */
 export function cleanScriptPath(scriptPath: string): string {
 
     const baseDir = process.env['GITHUB_WORKSPACE'] || '';
     const cleanedScriptPath = scriptPath.replace(baseDir, '');
 
     return cleanedScriptPath.trim();
-
 }
 
 /**
@@ -122,4 +124,24 @@ export function generateK6RunCommand(path: string, flags: string, isCloud: boole
 
     core.debug("🤖 Generated command: " + command);
     return command;
+}
+
+export function executeRunK6Command(command: string, totalTestRuns: number, testResultUrlsMap: TestRunUrlsMap, debug: boolean): any {
+    const parts = command.split(' ');
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
+    const child = spawn(cmd, args, {
+        stdio: ['inherit'],
+        detached: true,
+        env: process.env,
+    });
+
+    // Parse k6 command output and extract test run URLs if running in cloud mode.
+    // Also, print the output to the console, excluding the progress lines.
+    child.stdout?.on('data', (data) => parseK6Output(data, testResultUrlsMap, totalTestRuns, debug));
+    child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
+
+    return child;
 }
