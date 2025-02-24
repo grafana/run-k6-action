@@ -1,11 +1,12 @@
 import * as core from '@actions/core';
-import * as glob from '@actions/glob';
+
 import { spawn } from 'child_process';
-import * as fs from 'fs-extra';
+
 import { generatePRComment } from './githubHelper';
 import { parseK6Output } from './k6OutputParser';
-import { cleanScriptPath, validateTestPaths } from './k6helper';
+import { cleanScriptPath, generateK6RunCommand, isCloudIntegrationEnabled, validateTestPaths } from './k6helper';
 import { TestRunUrlsMap } from './types';
+import { findTestsToRun } from './utils';
 
 const TEST_PIDS: number[] = [];
 
@@ -39,7 +40,7 @@ export async function run(): Promise<void> {
             throw new Error('No test files found')
         }
 
-                
+
         const verifiedTestPaths = await validateTestPaths(
             testPaths,
             inspectFlags ? inspectFlags.split(' ') : []
@@ -59,9 +60,9 @@ export async function run(): Promise<void> {
             return;
         }
 
-        const isCloud = await isCloudIntegrationEnabled()
+        const isCloud = isCloudIntegrationEnabled()
 
-        const commands = testPaths.map(testPath => generateCommand(testPath)),
+        const commands = testPaths.map(testPath => generateK6RunCommand(testPath, flags, isCloud, cloudRunLocally)),
             TOTAL_TEST_RUNS = commands.length,
             TEST_RESULT_URLS_MAP = new Proxy({}, {
                 set: (target: TestRunUrlsMap, key: string, value: string) => {
@@ -153,37 +154,7 @@ export async function run(): Promise<void> {
             process.exit(1);
         }
 
-        function generateCommand(path: string): string {
-            let command;
-            const args = [
-                `--address=`,
-                ...(flags ? flags.split(' ') : []),
-            ]
 
-            if (isCloud) {
-                // Cloud execution is possible for the test
-                if (cloudRunLocally) {
-                    // Execute tests locally and upload results to cloud
-                    command = "k6 run"
-                    args.push(`--out=cloud`)
-                } else {
-                    // Execute tests in cloud
-                    command = "k6 cloud"
-                }
-            } else {
-                // Local execution
-                command = "k6 run"
-            }
-
-            // Add path the arguments list
-            args.push(path)
-
-            // Append arguments to the command
-            command = `${command} ${args.join(' ')}`
-
-            core.debug("🤖 Generated command: " + command);
-            return command;
-        }
 
         function runCommand(command: string): any {
             const parts = command.split(' ');
@@ -220,29 +191,4 @@ process.on('SIGINT', () => {
     process.exit(1);
 });
 
-async function isCloudIntegrationEnabled(): Promise<boolean> {
-    if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
-        return false
-    }
 
-    if (process.env.K6_CLOUD_PROJECT_ID === undefined || process.env.K6_CLOUD_PROJECT_ID === '') {
-        throw new Error('K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set')
-    }
-
-    return true
-}
-
-async function findTestsToRun(path: string): Promise<string[]> {
-    const globber = await glob.create(path)
-    const files = await globber.glob()
-    return files.filter(file => !isDirectory(file))
-}
-
-function isDirectory(filepath: string): boolean {
-    try {
-        return fs.statSync(filepath).isDirectory();
-    } catch (err) {
-        // Ignore error
-    }
-    return false;
-}
