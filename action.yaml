@@ -15,15 +15,19 @@ inputs:
     required: true
   parallel:
     description: 'If true, run tests in parallel'
+    default: "false"
     required: false
   fail-fast:
     description: 'If true, fail on first test failure'
+    default: "false"
     required: false
   flags:
     description: 'Additional flags to pass to k6 tests'
+    default: ""
     required: false
   inspect-flags:
     description: 'Additional flags to pass to k6 inspection step'
+    default: ""
     required: false
   cloud-run-locally:
     description: 'If true, run tests locally instead and upload results to Grafana Cloud k6'

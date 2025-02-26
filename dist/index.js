@@ -34343,12 +34343,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const glob = __importStar(__nccwpck_require__(8090));
-const child_process_1 = __nccwpck_require__(2081);
-const fs = __importStar(__nccwpck_require__(5630));
 const githubHelper_1 = __nccwpck_require__(2179);
-const k6OutputParser_1 = __nccwpck_require__(5035);
 const k6helper_1 = __nccwpck_require__(1034);
+const utils_1 = __nccwpck_require__(1314);
 const TEST_PIDS = [];
 run();
 /**
@@ -34357,15 +34354,15 @@ run();
  */
 async function run() {
     try {
-        const testPaths = await findTestsToRun(core.getInput('path', { required: true }));
-        const parallel = core.getInput('parallel', { required: false }) === 'true';
-        const failFast = core.getInput('fail-fast', { required: false }) === 'true';
-        const flags = core.getInput('flags', { required: false });
-        const inspectFlags = core.getInput('inspect-flags', { required: false });
-        const cloudRunLocally = core.getInput('cloud-run-locally', { required: false }) === 'true';
-        const onlyVerifyScripts = core.getInput('only-verify-scripts', { required: false }) === 'true';
-        const shouldCommentCloudTestRunUrlOnPR = core.getInput('cloud-comment-on-pr', { required: false }) === 'true';
-        const debug = core.getInput('debug', { required: false }) === 'true';
+        const testPaths = await (0, utils_1.findTestsToRun)(core.getInput('path', { required: true }));
+        const parallel = core.getBooleanInput('parallel');
+        const failFast = core.getBooleanInput('fail-fast');
+        const flags = core.getInput('flags');
+        const inspectFlags = core.getInput('inspect-flags');
+        const cloudRunLocally = core.getBooleanInput('cloud-run-locally');
+        const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts');
+        const shouldCommentCloudTestRunUrlOnPR = core.getBooleanInput('cloud-comment-on-pr');
+        const debug = core.getBooleanInput('debug');
         const allPromises = [];
         core.debug(`Flag to show k6 progress output set to: ${debug}`);
         core.debug(`🔍 Found following ${testPaths.length} test run files:`);
@@ -34387,8 +34384,8 @@ async function run() {
             console.log('🔍 Only verifying scripts. Skipping test execution');
             return;
         }
-        const isCloud = await isCloudIntegrationEnabled();
-        const commands = testPaths.map(testPath => generateCommand(testPath)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
+        const isCloud = (0, k6helper_1.isCloudIntegrationEnabled)();
+        const commands = testPaths.map(testPath => (0, k6helper_1.generateK6RunCommand)(testPath, flags, isCloud, cloudRunLocally)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
             set: (target, key, value) => {
                 target[key] = value;
                 if (Object.keys(target).length === TOTAL_TEST_RUNS) {
@@ -34412,7 +34409,7 @@ async function run() {
         if (parallel) {
             const childProcesses = [];
             commands.forEach(command => {
-                const child = runCommand(command);
+                const child = (0, k6helper_1.executeRunK6Command)(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
                 childProcesses.push(child);
                 TEST_PIDS.push(child.pid);
                 allPromises.push(new Promise(resolve => {
@@ -34446,7 +34443,7 @@ async function run() {
         }
         else {
             for (const command of commands) {
-                const child = runCommand(command);
+                const child = (0, k6helper_1.executeRunK6Command)(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
                 TEST_PIDS.push(child.pid);
                 await new Promise(resolve => {
                     child.on('exit', (code, signal) => {
@@ -34477,51 +34474,6 @@ async function run() {
             console.log('🚨 Some tests failed');
             process.exit(1);
         }
-        function generateCommand(path) {
-            let command;
-            const args = [
-                `--address=`,
-                ...(flags ? flags.split(' ') : []),
-            ];
-            if (isCloud) {
-                // Cloud execution is possible for the test
-                if (cloudRunLocally) {
-                    // Execute tests locally and upload results to cloud
-                    command = "k6 run";
-                    args.push(`--out=cloud`);
-                }
-                else {
-                    // Execute tests in cloud
-                    command = "k6 cloud";
-                }
-            }
-            else {
-                // Local execution
-                command = "k6 run";
-            }
-            // Add path the arguments list
-            args.push(path);
-            // Append arguments to the command
-            command = `${command} ${args.join(' ')}`;
-            core.debug("🤖 Generated command: " + command);
-            return command;
-        }
-        function runCommand(command) {
-            const parts = command.split(' ');
-            const cmd = parts[0];
-            const args = parts.slice(1);
-            console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
-            const child = (0, child_process_1.spawn)(cmd, args, {
-                stdio: ['inherit'],
-                detached: true,
-                env: process.env,
-            });
-            // Parse k6 command output and extract test run URLs if running in cloud mode.
-            // Also, print the output to the console, excluding the progress lines.
-            child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, TEST_RESULT_URLS_MAP, TOTAL_TEST_RUNS, debug));
-            child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
-            return child;
-        }
     }
     catch (error) {
         if (error instanceof Error)
@@ -34541,29 +34493,6 @@ process.on('SIGINT', () => {
     });
     process.exit(1);
 });
-async function isCloudIntegrationEnabled() {
-    if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
-        return false;
-    }
-    if (process.env.K6_CLOUD_PROJECT_ID === undefined || process.env.K6_CLOUD_PROJECT_ID === '') {
-        throw new Error('K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set');
-    }
-    return true;
-}
-async function findTestsToRun(path) {
-    const globber = await glob.create(path);
-    const files = await globber.glob();
-    return files.filter(file => !isDirectory(file));
-}
-function isDirectory(filepath) {
-    try {
-        return fs.statSync(filepath).isDirectory();
-    }
-    catch (err) {
-        // Ignore error
-    }
-    return false;
-}
 
 
 /***/ }),
@@ -34719,23 +34648,48 @@ exports.parseK6Output = parseK6Output;
 /***/ }),
 
 /***/ 1034:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanScriptPath = exports.validateTestPaths = void 0;
+exports.executeRunK6Command = exports.generateK6RunCommand = exports.isCloudIntegrationEnabled = exports.cleanScriptPath = exports.validateTestPaths = void 0;
 // Common helper functions used in the action
+const core = __importStar(__nccwpck_require__(2186));
 const child_process_1 = __nccwpck_require__(2081);
+const k6OutputParser_1 = __nccwpck_require__(5035);
+/**
+ * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
+ * A test path is considered valid if the command returns an exit code of 0.
+ *
+ * @export
+ * @param {string[]} testPaths - List of test paths to validate
+ * @return {Promise<string[]>} - List of valid test paths
+ */
 async function validateTestPaths(testPaths, flags) {
-    /**
-     * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
-     * A test path is considered valid if the command returns an exit code of 0.
-     *
-     * @export
-     * @param {string[]} testPaths - List of test paths to validate
-     * @return {Promise<string[]>} - List of valid test paths
-     */
     if (testPaths.length === 0) {
         throw new Error('No test files found');
     }
@@ -34761,20 +34715,157 @@ async function validateTestPaths(testPaths, flags) {
     return validK6TestPaths;
 }
 exports.validateTestPaths = validateTestPaths;
+/**
+ * Cleans the script path by removing the base directory prefix if it is present.
+ *
+ * @export
+ * @param {string} scriptPath - The script path to clean
+ * @return {string} - Cleaned script path
+ *
+ * */
 function cleanScriptPath(scriptPath) {
-    /**
-     * Cleans the script path by removing the base directory prefix if it is present.
-     *
-     * @export
-     * @param {string} scriptPath - The script path to clean
-     * @return {string} - Cleaned script path
-     *
-     * */
     const baseDir = process.env['GITHUB_WORKSPACE'] || '';
     const cleanedScriptPath = scriptPath.replace(baseDir, '');
     return cleanedScriptPath.trim();
 }
 exports.cleanScriptPath = cleanScriptPath;
+/**
+ * Checks if the cloud integration is enabled by checking if the K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID are set.
+ *
+ * @export
+ * @return {boolean} - True if the cloud integration is enabled, false otherwise
+ */
+function isCloudIntegrationEnabled() {
+    if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
+        return false;
+    }
+    if (process.env.K6_CLOUD_PROJECT_ID === undefined || process.env.K6_CLOUD_PROJECT_ID === '') {
+        throw new Error('K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set');
+    }
+    return true;
+}
+exports.isCloudIntegrationEnabled = isCloudIntegrationEnabled;
+/**
+ * Generates a command for running k6 tests.
+ *
+ * @param path - The path to the test file.
+ * @param flags - The flags to pass to k6.
+ * @param isCloud - Whether the test is running in the cloud.
+ * @param cloudRunLocally - Whether to run the test locally and upload results to cloud.
+ *
+ * @returns The generated command.
+ */
+function generateK6RunCommand(path, flags, isCloud, cloudRunLocally) {
+    let command;
+    const args = [
+        `--address=`,
+        ...(flags ? flags.split(' ') : []),
+    ];
+    if (isCloud) {
+        // Cloud execution is possible for the test
+        if (cloudRunLocally) {
+            // Execute tests locally and upload results to cloud
+            command = "k6 run";
+            args.push(`--out=cloud`);
+        }
+        else {
+            // Execute tests in cloud
+            command = "k6 cloud";
+        }
+    }
+    else {
+        // Local execution
+        command = "k6 run";
+    }
+    // Add path the arguments list
+    args.push(path);
+    // Append arguments to the command
+    command = `${command} ${args.join(' ')}`;
+    core.debug("🤖 Generated command: " + command);
+    return command;
+}
+exports.generateK6RunCommand = generateK6RunCommand;
+function executeRunK6Command(command, totalTestRuns, testResultUrlsMap, debug) {
+    const parts = command.split(' ');
+    const cmd = parts[0];
+    const args = parts.slice(1);
+    console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
+    const child = (0, child_process_1.spawn)(cmd, args, {
+        stdio: ['inherit'],
+        detached: true,
+        env: process.env,
+    });
+    // Parse k6 command output and extract test run URLs if running in cloud mode.
+    // Also, print the output to the console, excluding the progress lines.
+    child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, testResultUrlsMap, totalTestRuns, debug));
+    child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
+    return child;
+}
+exports.executeRunK6Command = executeRunK6Command;
+
+
+/***/ }),
+
+/***/ 1314:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.findTestsToRun = exports.isDirectory = void 0;
+const glob = __importStar(__nccwpck_require__(8090));
+const fs = __importStar(__nccwpck_require__(5630));
+/**
+ * Checks if a given path is a directory.
+ *
+ * @param {string} filepath - The path to check.
+ * @returns {boolean} - True if the path is a directory, false otherwise.
+ */
+function isDirectory(filepath) {
+    try {
+        return fs.statSync(filepath).isDirectory();
+    }
+    catch (err) {
+        // Ignore error
+        return false;
+    }
+}
+exports.isDirectory = isDirectory;
+/**
+ * Finds all test files in a given path.
+ *
+ * @param {string} path - The path to search for tests.
+ * @returns {Promise<string[]>} - A promise that resolves to an array of test file paths.
+ */
+async function findTestsToRun(path) {
+    const globber = await glob.create(path);
+    const files = await globber.glob();
+    return files.filter(file => !isDirectory(file));
+}
+exports.findTestsToRun = findTestsToRun;
 
 
 /***/ }),
