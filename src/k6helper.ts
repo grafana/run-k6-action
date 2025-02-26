@@ -1,6 +1,7 @@
 // Common helper functions used in the action
 import * as core from '@actions/core';
 import { spawn } from 'child_process';
+import path from 'path';
 import { parseK6Output } from './k6OutputParser';
 import { TestRunUrlsMap } from './types';
 
@@ -51,19 +52,38 @@ export async function validateTestPaths(testPaths: string[], flags: string[]): P
 }
 
 /**
- * Cleans the script path by removing the base directory prefix if it is present.
+ * Cleans the script path by:
+ * 1. Removing the base directory prefix if present
+ * 2. Normalizing path separators for the current OS
+ * 3. Removing any leading slashes
+ * 4. Ensuring consistent formatting
  *
  * @export
  * @param {string} scriptPath - The script path to clean
  * @return {string} - Cleaned script path
- *
- * */
+ */
 export function cleanScriptPath(scriptPath: string): string {
-
     const baseDir = process.env['GITHUB_WORKSPACE'] || '';
-    const cleanedScriptPath = scriptPath.replace(baseDir, '');
 
-    return cleanedScriptPath.trim();
+    // Normalize paths to ensure consistent separators
+    const normalizedScriptPath = path.normalize(scriptPath);
+    const normalizedBaseDir = path.normalize(baseDir);
+
+    // Remove base directory if present
+    let cleanedPath = normalizedScriptPath;
+    if (normalizedBaseDir && normalizedScriptPath.startsWith(normalizedBaseDir)) {
+        cleanedPath = normalizedScriptPath.substring(normalizedBaseDir.length);
+    }
+
+    // Remove leading separator(s) if present
+    while (cleanedPath.startsWith(path.sep)) {
+        cleanedPath = cleanedPath.substring(1);
+    }
+
+    // Ensure consistent path format
+    cleanedPath = cleanedPath.trim();
+
+    return cleanedPath;
 }
 
 /**

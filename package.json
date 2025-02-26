@@ -7,7 +7,10 @@
     "package": "ncc build src/index.ts",
     "testPush": "npm run package; gh act release",
     "testPR": "npm run package; gh act pull_request",
-    "testRelease": "npm run package; gh act release"
+    "testRelease": "npm run package; gh act release",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +19,9 @@
     "@types/chmodr": "^1.0.3",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.24",
-    "typescript": "^5.3.3"
+    "@vitest/coverage-v8": "^1.2.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
   },
   "dependencies": {
     "@actions/core": "^1.10.1",

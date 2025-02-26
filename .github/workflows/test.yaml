@@ -3,7 +3,25 @@ on:
   push:
 
 jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        id: install
+        run: npm ci
+      - name: Run tests
+        id: test
+        run: npm run test:coverage
+
   protocol:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     env:
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
@@ -21,6 +39,7 @@ jobs:
           parallel: true
           cloud-run-locally: false
   protocol-without-flags:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +51,7 @@ jobs:
           path: |
             ./dev/protocol*.js
   show-complete-k6-output:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +64,7 @@ jobs:
           flags: --vus 10 --duration 30s
           debug: true
   verify-scripts:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +77,7 @@ jobs:
             ./dev/verify-script-tests/**.js
           only-verify-scripts: true
   env-var-test:
+    needs: [unit-tests]
     runs-on: ubuntu-latest
     env:
       TEST_SYSTEM_ENV_VAR: "test-system-env-var-value"
