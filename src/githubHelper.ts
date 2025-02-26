@@ -3,13 +3,13 @@ import * as github from '@actions/github';
 import { cleanScriptPath } from './k6helper';
 import { TestRunUrlsMap } from './types';
 
-const { context } = github;
-const { eventName, payload } = context;
-const { repo, owner } = context.repo;
+// Create a watermark function instead of a constant
+const getWatermark = () => `<!-- k6 GitHub Action Comment: ${github.context.job} -->\n`;
 
-const WATERMARK = `<!-- k6 GitHub Action Comment: ${context.job} -->\n`;
-const token = core.getInput('github-token', { required: true });
-const octokit = github.getOctokit(token);
+const getOctokit = () => {
+  const token = core.getInput('github-token', { required: true });
+  return github.getOctokit(token);
+}
 
 export async function getPullRequestNumber(): Promise<number | undefined> {
   /**
@@ -19,6 +19,12 @@ export async function getPullRequestNumber(): Promise<number | undefined> {
    *
    * @export
    */
+
+  const octokit = getOctokit()
+
+  // Use the context from the github import
+  const { eventName, payload } = github.context;
+
   let commitSHA;
   let pullRequestNumber = payload.pull_request ? payload.pull_request.number : undefined;
 
@@ -39,15 +45,15 @@ export async function getPullRequestNumber(): Promise<number | undefined> {
 
   const result =
     await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
       commit_sha: commitSHA,
     }),
 
     openPRs = result.data.filter((pr: { state: string; }) => pr.state === 'open'),
     selectedPR =
       openPRs.find((pr: any) => {
-        return context.payload.ref === `refs/heads/${pr.head.ref}`;
+        return github.context.payload.ref === `refs/heads/${pr.head.ref}`;
       }) || openPRs[0];
 
   return selectedPR?.number;
@@ -63,6 +69,10 @@ export async function getActionCommentId(pullRequestNumber: number): Promise<num
    *
    * @export
    */
+  const octokit = getOctokit()
+
+  const { owner, repo } = github.context.repo;
+  const watermark = getWatermark();
 
   const { data: comments } = await octokit.rest.issues.listComments({
     repo,
@@ -70,7 +80,7 @@ export async function getActionCommentId(pullRequestNumber: number): Promise<num
     issue_number: pullRequestNumber,
   });
 
-  const comment = comments.find((c: any) => c.body.startsWith(WATERMARK));
+  const comment = comments.find((c: any) => c.body.startsWith(watermark));
 
   return comment?.id;
 
@@ -91,10 +101,14 @@ export async function createOrUpdateComment(pullRequestNumber: number, commentBo
    * @throws {Error} - Throws an error if the comment cannot be created or updated.
    *
    * */
+  const octokit = getOctokit();
+
+  const { owner, repo } = github.context.repo;
+  const watermark = getWatermark();
 
   const commentId = await getActionCommentId(pullRequestNumber);
 
-  commentBody = WATERMARK + commentBody;
+  commentBody = watermark + commentBody;
 
   if (commentId) {
     await octokit.rest.issues.updateComment({
@@ -149,6 +163,7 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
   } catch (error: any) {
     core.debug(`Got following error in getting pull request number`);
     core.debug(error);
+    return; // Return early if there's an error getting the PR number
   }
 
   if (!pullRequestNumber) {
