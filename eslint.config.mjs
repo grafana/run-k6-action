@@ -33,13 +33,7 @@ export default [
     },
     rules: {
       "no-param-reassign": "error",
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          varsIgnorePattern: '^_',
-          argsIgnorePattern: '^_'
-        }
-      ],
+      '@typescript-eslint/no-unused-vars': "error"
     },
   },
   prettierConfig

@@ -1,6 +1,6 @@
-import * as glob from '@actions/glob';
+import * as glob from '@actions/glob'
 
-import * as fs from 'fs-extra';
+import * as fs from 'fs-extra'
 
 /**
  * Checks if a given path is a directory.
@@ -9,12 +9,12 @@ import * as fs from 'fs-extra';
  * @returns {boolean} - True if the path is a directory, false otherwise.
  */
 export function isDirectory(filepath: string): boolean {
-    try {
-        return fs.statSync(filepath).isDirectory();
-    } catch (err) {
-        // Ignore error
-        return false;
-    }
+  try {
+    return fs.statSync(filepath).isDirectory()
+  } catch {
+    // Ignore error
+    return false
+  }
 }
 
 /**
@@ -24,8 +24,7 @@ export function isDirectory(filepath: string): boolean {
  * @returns {Promise<string[]>} - A promise that resolves to an array of test file paths.
  */
 export async function findTestsToRun(path: string): Promise<string[]> {
-    const globber = await glob.create(path)
-    const files = await globber.glob()
-    return files.filter(file => !isDirectory(file))
+  const globber = await glob.create(path)
+  const files = await globber.glob()
+  return files.filter((file) => !isDirectory(file))
 }
-

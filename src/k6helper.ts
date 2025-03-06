@@ -1,10 +1,9 @@
 // Common helper functions used in the action
-import * as core from '@actions/core';
-import { spawn } from 'child_process';
-import path from 'path';
-import { parseK6Output } from './k6OutputParser';
-import { TestRunUrlsMap } from './types';
-
+import * as core from '@actions/core'
+import { ChildProcess, spawn } from 'child_process'
+import path from 'path'
+import { parseK6Output } from './k6OutputParser'
+import { TestRunUrlsMap } from './types'
 
 /**
  * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
@@ -14,41 +13,45 @@ import { TestRunUrlsMap } from './types';
  * @param {string[]} testPaths - List of test paths to validate
  * @return {Promise<string[]>} - List of valid test paths
  */
-export async function validateTestPaths(testPaths: string[], flags: string[]): Promise<string[]> {
+export async function validateTestPaths(
+  testPaths: string[],
+  flags: string[]
+): Promise<string[]> {
+  if (testPaths.length === 0) {
+    throw new Error('No test files found')
+  }
 
-    if (testPaths.length === 0) {
-        throw new Error('No test files found')
-    }
+  console.log(`🔍 Validating test run files.`)
 
-    console.log(`🔍 Validating test run files.`);
+  const validK6TestPaths: string[] = [],
+    command = 'k6',
+    defaultArgs = ['inspect', '--execution-requirements', ...flags]
 
-    const validK6TestPaths: string[] = [],
-        command = "k6",
-        defaultArgs = ["inspect", "--execution-requirements", ...flags];
+  const allPromises = [] as Promise<void>[]
 
-    const allPromises = [] as any[];
+  testPaths.forEach(async (testPath) => {
+    const args = [...defaultArgs, testPath]
 
-    testPaths.forEach(async testPath => {
-        const args = [...defaultArgs, testPath];
+    const child = spawn(command, args, {
+      stdio: ['inherit', 'ignore', 'inherit'], // 'ignore' is for stdout
+      detached: false,
+    })
 
-        const child = spawn(command, args, {
-            stdio: ['inherit', 'ignore', 'inherit'], // 'ignore' is for stdout
-            detached: false,
-        });
+    allPromises.push(
+      new Promise<void>((resolve) => {
+        child.on('exit', (code: number) => {
+          if (code === 0) {
+            validK6TestPaths.push(testPath)
+          }
+          resolve()
+        })
+      })
+    )
+  })
 
-        allPromises.push(new Promise<void>(resolve => {
-            child.on('exit', (code: number, signal: string) => {
-                if (code === 0) {
-                    validK6TestPaths.push(testPath);
-                }
-                resolve();
-            });
-        }));
-    });
+  await Promise.all(allPromises)
 
-    await Promise.all(allPromises);
-
-    return validK6TestPaths;
+  return validK6TestPaths
 }
 
 /**
@@ -63,27 +66,27 @@ export async function validateTestPaths(testPaths: string[], flags: string[]): P
  * @return {string} - Cleaned script path
  */
 export function cleanScriptPath(scriptPath: string): string {
-    const baseDir = process.env['GITHUB_WORKSPACE'] || '';
+  const baseDir = process.env['GITHUB_WORKSPACE'] || ''
 
-    // Normalize paths to ensure consistent separators
-    const normalizedScriptPath = path.normalize(scriptPath);
-    const normalizedBaseDir = path.normalize(baseDir);
+  // Normalize paths to ensure consistent separators
+  const normalizedScriptPath = path.normalize(scriptPath)
+  const normalizedBaseDir = path.normalize(baseDir)
 
-    // Remove base directory if present
-    let cleanedPath = normalizedScriptPath;
-    if (normalizedBaseDir && normalizedScriptPath.startsWith(normalizedBaseDir)) {
-        cleanedPath = normalizedScriptPath.substring(normalizedBaseDir.length);
-    }
+  // Remove base directory if present
+  let cleanedPath = normalizedScriptPath
+  if (normalizedBaseDir && normalizedScriptPath.startsWith(normalizedBaseDir)) {
+    cleanedPath = normalizedScriptPath.substring(normalizedBaseDir.length)
+  }
 
-    // Remove leading separator(s) if present
-    while (cleanedPath.startsWith(path.sep)) {
-        cleanedPath = cleanedPath.substring(1);
-    }
+  // Remove leading separator(s) if present
+  while (cleanedPath.startsWith(path.sep)) {
+    cleanedPath = cleanedPath.substring(1)
+  }
 
-    // Ensure consistent path format
-    cleanedPath = cleanedPath.trim();
+  // Ensure consistent path format
+  cleanedPath = cleanedPath.trim()
 
-    return cleanedPath;
+  return cleanedPath
 }
 
 /**
@@ -93,15 +96,23 @@ export function cleanScriptPath(scriptPath: string): string {
  * @return {boolean} - True if the cloud integration is enabled, false otherwise
  */
 export function isCloudIntegrationEnabled(): boolean {
-    if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
-        return false
-    }
+  if (
+    process.env.K6_CLOUD_TOKEN === undefined ||
+    process.env.K6_CLOUD_TOKEN === ''
+  ) {
+    return false
+  }
 
-    if (process.env.K6_CLOUD_PROJECT_ID === undefined || process.env.K6_CLOUD_PROJECT_ID === '') {
-        throw new Error('K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set')
-    }
+  if (
+    process.env.K6_CLOUD_PROJECT_ID === undefined ||
+    process.env.K6_CLOUD_PROJECT_ID === ''
+  ) {
+    throw new Error(
+      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
+    )
+  }
 
-    return true
+  return true
 }
 
 /**
@@ -114,54 +125,65 @@ export function isCloudIntegrationEnabled(): boolean {
  *
  * @returns The generated command.
  */
-export function generateK6RunCommand(path: string, flags: string, isCloud: boolean, cloudRunLocally: boolean): string {
-    let command;
-    const args = [
-        `--address=`,
-        ...(flags ? flags.split(' ') : []),
-    ]
+export function generateK6RunCommand(
+  path: string,
+  flags: string,
+  isCloud: boolean,
+  cloudRunLocally: boolean
+): string {
+  let command
+  const args = [`--address=`, ...(flags ? flags.split(' ') : [])]
 
-    if (isCloud) {
-        // Cloud execution is possible for the test
-        if (cloudRunLocally) {
-            // Execute tests locally and upload results to cloud
-            command = "k6 run"
-            args.push(`--out=cloud`)
-        } else {
-            // Execute tests in cloud
-            command = "k6 cloud"
-        }
+  if (isCloud) {
+    // Cloud execution is possible for the test
+    if (cloudRunLocally) {
+      // Execute tests locally and upload results to cloud
+      command = 'k6 run'
+      args.push(`--out=cloud`)
     } else {
-        // Local execution
-        command = "k6 run"
+      // Execute tests in cloud
+      command = 'k6 cloud'
     }
+  } else {
+    // Local execution
+    command = 'k6 run'
+  }
 
-    // Add path the arguments list
-    args.push(path)
+  // Add path the arguments list
+  args.push(path)
 
-    // Append arguments to the command
-    command = `${command} ${args.join(' ')}`
+  // Append arguments to the command
+  command = `${command} ${args.join(' ')}`
 
-    core.debug("🤖 Generated command: " + command);
-    return command;
+  core.debug('🤖 Generated command: ' + command)
+  return command
 }
 
-export function executeRunK6Command(command: string, totalTestRuns: number, testResultUrlsMap: TestRunUrlsMap, debug: boolean): any {
-    const parts = command.split(' ');
-    const cmd = parts[0];
-    const args = parts.slice(1);
+export function executeRunK6Command(
+  command: string,
+  totalTestRuns: number,
+  testResultUrlsMap: TestRunUrlsMap,
+  debug: boolean
+): ChildProcess {
+  const parts = command.split(' ')
+  const cmd = parts[0]
+  const args = parts.slice(1)
 
-    console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`);
-    const child = spawn(cmd, args, {
-        stdio: ['inherit'],
-        detached: true,
-        env: process.env,
-    });
+  console.log(`🤖 Running test: ${cmd} ${args.join(' ')}`)
+  const child = spawn(cmd, args, {
+    stdio: ['inherit'],
+    detached: true,
+    env: process.env,
+  })
 
-    // Parse k6 command output and extract test run URLs if running in cloud mode.
-    // Also, print the output to the console, excluding the progress lines.
-    child.stdout?.on('data', (data) => parseK6Output(data, testResultUrlsMap, totalTestRuns, debug));
-    child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
+  // Parse k6 command output and extract test run URLs if running in cloud mode.
+  // Also, print the output to the console, excluding the progress lines.
+  child.stdout?.on('data', (data) =>
+    parseK6Output(data, testResultUrlsMap, totalTestRuns, debug)
+  )
+  child.stderr?.on('data', (data) =>
+    process.stderr.write(`🚨 ${data.toString()}`)
+  )
 
-    return child;
+  return child
 }
