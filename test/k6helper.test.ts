@@ -1,14 +1,16 @@
 import { spawn } from 'child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiRequest } from '../src/apiUtils'
 import {
   cleanScriptPath,
   executeRunK6Command,
   extractTestRunId,
+  fetchChecks,
   generateK6RunCommand,
   isCloudIntegrationEnabled,
   validateTestPaths,
 } from '../src/k6helper'
-import { generateMetricsSummary } from '../src/markdownRenderer'
+import { generateMarkdownSummary } from '../src/markdownRenderer'
 import { TestRunUrlsMap } from '../src/types'
 
 // Mock child_process.spawn
@@ -35,6 +37,11 @@ vi.mock('@actions/core', () => ({
   getInput: vi.fn(),
   getBooleanInput: vi.fn(),
   setFailed: vi.fn(),
+}))
+
+// Mock apiRequest to return specific responses for different tests
+vi.mock('../src/apiUtils', () => ({
+  apiRequest: vi.fn(),
 }))
 
 describe('cleanScriptPath', () => {
@@ -241,13 +248,17 @@ describe('extractTestRunId', () => {
   })
 })
 
-describe('generateMetricsSummary', () => {
+describe('generateMarkdownSummary', () => {
   it('should return a default message for null metrics', () => {
-    expect(generateMetricsSummary(null)).toBe('No metrics data available.')
+    expect(generateMarkdownSummary(null, null)).toBe(
+      'No metrics data available.'
+    )
   })
 
   it('should return a default message for undefined metrics', () => {
-    expect(generateMetricsSummary(undefined)).toBe('No metrics data available.')
+    expect(generateMarkdownSummary(undefined, null)).toBe(
+      'No metrics data available.'
+    )
   })
 
   it('should return a default message for empty metrics', () => {
@@ -260,7 +271,7 @@ describe('generateMetricsSummary', () => {
       browser_metric_summary: null,
     }
 
-    expect(generateMetricsSummary(emptyMetrics)).toBe(
+    expect(generateMarkdownSummary(emptyMetrics, null)).toBe(
       'No metrics data available.'
     )
   })
@@ -278,8 +289,71 @@ describe('generateMetricsSummary', () => {
       browser_metric_summary: null,
     }
 
-    const result = generateMetricsSummary(metrics)
+    const result = generateMarkdownSummary(metrics, null)
 
     expect(result).toContain('checks were not successful')
+  })
+})
+
+describe('fetchChecks', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('should return checks array when API request succeeds', async () => {
+    // Mock response from the API
+    const mockChecksResponse = {
+      '@count': 3,
+      value: [
+        {
+          group_id: null,
+          id: 'c43e6629-af3b-59c4-a047-531dca123851',
+          metric_summary: {
+            fail_count: 10,
+            success_count: 0,
+            success_rate: 0.0,
+          },
+          name: 'black friday is present',
+          scenario_id: 'efeb799c-a053-56bf-9a26-c59d78537bc0',
+        },
+        {
+          group_id: null,
+          id: 'f9c6591a-3195-525f-a1e8-c39173a65056',
+          metric_summary: {
+            fail_count: 0,
+            success_count: 10,
+            success_rate: 1.0,
+          },
+          name: 'Connected successfully',
+          scenario_id: 'efeb799c-a053-56bf-9a26-c59d78537bc0',
+        },
+      ],
+    }
+
+    // Mock the apiRequest function to return our mock response
+    vi.mocked(apiRequest).mockResolvedValueOnce(mockChecksResponse)
+
+    // Call the function
+    const result = await fetchChecks('1234')
+
+    // Verify the result
+    expect(result).toEqual(mockChecksResponse.value)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/checks')
+    )
+  })
+
+  it('should return empty array when API request fails', async () => {
+    // Mock the apiRequest function to return undefined (API failure)
+    vi.mocked(apiRequest).mockResolvedValueOnce(undefined)
+
+    // Call the function
+    const result = await fetchChecks('1234')
+
+    // Verify the result
+    expect(result).toEqual([])
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/checks')
+    )
   })
 })

@@ -84,3 +84,27 @@ export type TestRunSummary = {
   metrics_summary: MetricsSummary
   test_run_status: number
 }
+
+/**
+ * Interface for the metric summary of a check
+ */
+export interface CheckMetricSummary {
+  fail_count: number
+  success_count: number
+  success_rate: number
+}
+
+/**
+ * Interface for a single check item
+ */
+export interface Check {
+  metric_summary: CheckMetricSummary
+  name: string
+}
+
+/**
+ * Interface for the checks API response
+ */
+export interface ChecksResponse {
+  value: Check[]
+}

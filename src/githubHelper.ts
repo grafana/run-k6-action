@@ -7,10 +7,11 @@ import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
 import {
   cleanScriptPath,
   extractTestRunId,
+  fetchChecks,
   fetchTestRunSummary,
 } from './k6helper'
 import {
-  generateMetricsSummary,
+  generateMarkdownSummary,
   getTestRunStatusMarkdown,
 } from './markdownRenderer'
 import { TestRunUrlsMap } from './types'
@@ -203,8 +204,11 @@ export async function generatePRComment(
       getTestRunStatusMarkdown(testRunSummary.test_run_status)
     )
 
-    const markdownSummary = generateMetricsSummary(
-      testRunSummary.metrics_summary
+    const checks = await fetchChecks(testRunId)
+
+    const markdownSummary = generateMarkdownSummary(
+      testRunSummary.metrics_summary,
+      checks
     )
 
     resultSummaryStrings.push(markdownSummary)
