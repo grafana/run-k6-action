@@ -1,12 +1,16 @@
 import { spawn } from 'child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiRequest } from '../src/apiUtils'
 import {
   cleanScriptPath,
   executeRunK6Command,
+  extractTestRunId,
+  fetchChecks,
   generateK6RunCommand,
   isCloudIntegrationEnabled,
   validateTestPaths,
 } from '../src/k6helper'
+import { generateMarkdownSummary } from '../src/markdownRenderer'
 import { TestRunUrlsMap } from '../src/types'
 
 // Mock child_process.spawn
@@ -33,6 +37,11 @@ vi.mock('@actions/core', () => ({
   getInput: vi.fn(),
   getBooleanInput: vi.fn(),
   setFailed: vi.fn(),
+}))
+
+// Mock apiRequest to return specific responses for different tests
+vi.mock('../src/apiUtils', () => ({
+  apiRequest: vi.fn(),
 }))
 
 describe('cleanScriptPath', () => {
@@ -215,6 +224,136 @@ describe('validateTestPaths', () => {
       'k6',
       ['inspect', '--execution-requirements', '--no-thresholds', 'test1.js'],
       expect.any(Object)
+    )
+  })
+})
+
+describe('extractTestRunId', () => {
+  it('should return the test run ID from a Grafana Cloud K6 URL', () => {
+    const testRunUrl = 'https://xxx.grafana.net/a/k6-app/runs/4050582'
+    const result = extractTestRunId(testRunUrl)
+    expect(result).toBe('4050582')
+  })
+
+  it('should return null if the test run URL does not contain a valid ID', () => {
+    const testRunUrl = 'https://xxx.grafana.net/a/k6-app/runs/'
+    const result = extractTestRunId(testRunUrl)
+    expect(result).toBeNull()
+  })
+
+  it('should return null if the test run URL is not a Grafana Cloud K6 URL', () => {
+    const testRunUrl = 'https://xxx.com/test-run/4050582'
+    const result = extractTestRunId(testRunUrl)
+    expect(result).toBeNull()
+  })
+})
+
+describe('generateMarkdownSummary', () => {
+  it('should return a default message for null metrics', () => {
+    expect(generateMarkdownSummary(null, null)).toBe(
+      'No metrics data available.'
+    )
+  })
+
+  it('should return a default message for undefined metrics', () => {
+    expect(generateMarkdownSummary(undefined, null)).toBe(
+      'No metrics data available.'
+    )
+  })
+
+  it('should return a default message for empty metrics', () => {
+    const emptyMetrics = {
+      http_metric_summary: null,
+      ws_metric_summary: null,
+      grpc_metric_summary: null,
+      checks_metric_summary: null,
+      thresholds_summary: null,
+      browser_metric_summary: null,
+    }
+
+    expect(generateMarkdownSummary(emptyMetrics, null)).toBe(
+      'No metrics data available.'
+    )
+  })
+
+  it('should display checks summary when present', () => {
+    const metrics = {
+      http_metric_summary: null,
+      ws_metric_summary: null,
+      grpc_metric_summary: null,
+      checks_metric_summary: {
+        total: 10,
+        successes: 8,
+      },
+      thresholds_summary: null,
+      browser_metric_summary: null,
+    }
+
+    const result = generateMarkdownSummary(metrics, null)
+
+    expect(result).toContain('checks were not successful')
+  })
+})
+
+describe('fetchChecks', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('should return checks array when API request succeeds', async () => {
+    // Mock response from the API
+    const mockChecksResponse = {
+      '@count': 3,
+      value: [
+        {
+          group_id: null,
+          id: 'c43e6629-af3b-59c4-a047-531dca123851',
+          metric_summary: {
+            fail_count: 10,
+            success_count: 0,
+            success_rate: 0.0,
+          },
+          name: 'black friday is present',
+          scenario_id: 'efeb799c-a053-56bf-9a26-c59d78537bc0',
+        },
+        {
+          group_id: null,
+          id: 'f9c6591a-3195-525f-a1e8-c39173a65056',
+          metric_summary: {
+            fail_count: 0,
+            success_count: 10,
+            success_rate: 1.0,
+          },
+          name: 'Connected successfully',
+          scenario_id: 'efeb799c-a053-56bf-9a26-c59d78537bc0',
+        },
+      ],
+    }
+
+    // Mock the apiRequest function to return our mock response
+    vi.mocked(apiRequest).mockResolvedValueOnce(mockChecksResponse)
+
+    // Call the function
+    const result = await fetchChecks('1234')
+
+    // Verify the result
+    expect(result).toEqual(mockChecksResponse.value)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/checks')
+    )
+  })
+
+  it('should return empty array when API request fails', async () => {
+    // Mock the apiRequest function to return undefined (API failure)
+    vi.mocked(apiRequest).mockResolvedValueOnce(undefined)
+
+    // Call the function
+    const result = await fetchChecks('1234')
+
+    // Verify the result
+    expect(result).toEqual([])
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/checks')
     )
   })
 })

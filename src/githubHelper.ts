@@ -4,7 +4,16 @@ import { Context } from '@actions/github/lib/context'
 import { WebhookPayload } from '@actions/github/lib/interfaces'
 import { GitHub } from '@actions/github/lib/utils'
 import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
-import { cleanScriptPath } from './k6helper'
+import {
+  cleanScriptPath,
+  extractTestRunId,
+  fetchChecks,
+  fetchTestRunSummary,
+} from './k6helper'
+import {
+  generateMarkdownSummary,
+  getTestRunStatusMarkdown,
+} from './markdownRenderer'
 import { TestRunUrlsMap } from './types'
 
 // Create a watermark function instead of a constant
@@ -167,17 +176,47 @@ export async function generatePRComment(
 
   core.debug('Generating PR comment')
 
-  let testRunUrls = ''
+  const resultSummaryStrings = ['# Performance Test Results 🚀\n\n']
+  let testRunIndex = 1
+
   for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-    testRunUrls += `🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`
+    resultSummaryStrings.push(
+      `## ${testRunIndex}. 🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`
+    )
+
+    const testRunId = extractTestRunId(testRunUrl)
+
+    if (!testRunId) {
+      core.info(
+        `Skipping test run URL ${testRunUrl} (Script Path: ${scriptPath}) as it does not contain a valid test run id`
+      )
+      continue
+    }
+
+    const testRunSummary = await fetchTestRunSummary(testRunId)
+
+    if (!testRunSummary) {
+      core.info(`Unable to fetch test run summary for test run ${testRunId}`)
+      continue
+    }
+
+    resultSummaryStrings.push(
+      getTestRunStatusMarkdown(testRunSummary.test_run_status)
+    )
+
+    const checks = await fetchChecks(testRunId)
+
+    const markdownSummary = generateMarkdownSummary(
+      testRunSummary.metrics_summary,
+      checks
+    )
+
+    resultSummaryStrings.push(markdownSummary)
+    resultSummaryStrings.push('\n')
+    testRunIndex++
   }
 
-  const comment = `# Performance Test Results 🚀
-
-  Select a test run from below to view the test progress and results on Grafana Cloud K6:
-
-  ${testRunUrls}
-  `
+  const comment = resultSummaryStrings.join('\n')
 
   let pullRequestNumber
 

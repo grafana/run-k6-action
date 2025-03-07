@@ -89,11 +89,6 @@ export async function run(): Promise<void> {
                 for (const [script, url] of Object.entries(target)) {
                   console.log(`  ${cleanScriptPath(script)}: ${url}`)
                 }
-
-                if (shouldCommentCloudTestRunUrlOnPR) {
-                  // Generate PR comment with test run URLs
-                  allPromises.push(generatePRComment(target))
-                }
               }
             }
             return true
@@ -187,6 +182,11 @@ export async function run(): Promise<void> {
       }
     }
     await Promise.all(allPromises)
+
+    if (shouldCommentCloudTestRunUrlOnPR) {
+      // Generate PR comment with test run URLs
+      await generatePRComment(TEST_RESULT_URLS_MAP)
+    }
 
     if (!allTestsPassed) {
       console.log('🚨 Some tests failed')
