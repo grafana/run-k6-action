@@ -25,7 +25,7 @@ jobs:
     env:
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
       K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
-      K6_CLOUD_BASE_URL: "https://metrics.sureseat.in/cloud/v5"
+      K6_CLOUD_BASE_URL: "https://metrics.sureseat.in"
     steps:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
