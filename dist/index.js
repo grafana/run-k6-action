@@ -35099,6 +35099,150 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 890:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DEFAULT_RETRY_OPTIONS = void 0;
+exports.fetchWithRetry = fetchWithRetry;
+exports.apiRequest = apiRequest;
+// API utility functions for making robust requests with retry capability
+const core = __importStar(__nccwpck_require__(7484));
+/**
+ * Default retry options
+ */
+exports.DEFAULT_RETRY_OPTIONS = {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    backoffFactor: 2,
+    nonRetryStatusCodes: [400, 401, 403, 404, 405, 422],
+};
+/**
+ * Makes an HTTP request with automatic retry and exponential backoff.
+ * Will retry on all error status codes except those specified in nonRetryStatusCodes.
+ *
+ * @param url - The URL to request
+ * @param options - Fetch options (method, headers, body, etc.)
+ * @param retryOptions - Options for the retry mechanism (optional)
+ * @returns Promise with the fetch response
+ */
+async function fetchWithRetry(url, options = {}, retryOptions = {}) {
+    // Merge default retry options with provided options
+    const retry = {
+        ...exports.DEFAULT_RETRY_OPTIONS,
+        ...retryOptions,
+    };
+    let lastError;
+    let attemptCount = 0;
+    while (attemptCount <= retry.maxRetries) {
+        try {
+            const response = await fetch(url, options);
+            // If response is ok or status code is in the non-retry list, return the response
+            if (response.ok || retry.nonRetryStatusCodes.includes(response.status)) {
+                return response;
+            }
+            // If we get here, we have an error status code that should be retried
+            lastError = new Error(`HTTP error ${response.status}: ${response.statusText}`);
+            // Log the retry attempt
+            if (attemptCount < retry.maxRetries) {
+                const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
+                core.info(`Request to ${url} failed with status ${response.status}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
+                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+            }
+        }
+        catch (error) {
+            // Network errors, timeouts, etc.
+            lastError = error instanceof Error ? error : new Error(String(error));
+            if (attemptCount < retry.maxRetries) {
+                const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
+                core.info(`Request to ${url} failed: ${lastError.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
+                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+            }
+        }
+        attemptCount++;
+    }
+    // If we've exhausted all retries, throw the last error
+    throw lastError || new Error(`Failed after ${retry.maxRetries} retries`);
+}
+/**
+ * Makes an API request with retries and returns the parsed JSON response or undefined on error.
+ * Will retry on all error status codes except those specified in nonRetryStatusCodes.
+ *
+ * @template T - The expected type of the response data
+ * @param {string} url - The URL to request
+ * @param {RequestInit} options - Fetch options (method, headers, body, etc.)
+ * @param {Partial<RetryOptions>} retryOptions - Options for the retry mechanism (optional)
+ * @returns {Promise<T | undefined>} - The parsed response data or undefined on error
+ */
+async function apiRequest(url, options = {}, retryOptions = {}) {
+    try {
+        // Set default headers if not specified
+        if (!options.headers) {
+            options.headers = {
+                'Content-Type': 'application/json',
+            };
+        }
+        // Add auth token if available and not already set
+        const authHeaders = options.headers;
+        if (process.env.K6_CLOUD_TOKEN && !authHeaders['Authorization']) {
+            authHeaders['Authorization'] = `Token user-token`;
+        }
+        // Use our retry mechanism
+        const response = await fetchWithRetry(url, options, retryOptions);
+        // Handle non-OK responses
+        if (!response.ok) {
+            const errorText = await response.text();
+            core.info(`API request to ${url} failed with status ${response.status}: ${response.statusText}`);
+            core.info(`Response: ${errorText}`);
+            return undefined;
+        }
+        // Parse and return the JSON response
+        return (await response.json());
+    }
+    catch (error) {
+        core.info(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
+        return undefined;
+    }
+}
+
+
+/***/ }),
+
 /***/ 2384:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -35145,6 +35289,7 @@ exports.generatePRComment = generatePRComment;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const k6helper_1 = __nccwpck_require__(5354);
+const markdownRenderer_1 = __nccwpck_require__(953);
 // Create a watermark function instead of a constant
 const getWatermark = () => `<!-- k6 GitHub Action Comment: ${github.context.job} -->\n`;
 const getOctokit = () => {
@@ -35259,16 +35404,28 @@ async function generatePRComment(testRunUrlsMap) {
         return;
     }
     core.debug('Generating PR comment');
-    let testRunUrls = '';
+    const resultSummaryStrings = ['# Performance Test Results 🚀\n\n'];
+    let testRunIndex = 1;
     for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-        testRunUrls += `🔗 [${(0, k6helper_1.cleanScriptPath)(scriptPath)}](${testRunUrl})\n`;
+        resultSummaryStrings.push(`## ${testRunIndex}. 🔗 [${(0, k6helper_1.cleanScriptPath)(scriptPath)}](${testRunUrl})\n`);
+        const testRunId = (0, k6helper_1.extractTestRunId)(testRunUrl);
+        if (!testRunId) {
+            core.info(`Skipping test run URL ${testRunUrl} (Script Path: ${scriptPath}) as it does not contain a valid test run id`);
+            continue;
+        }
+        const testRunSummary = await (0, k6helper_1.fetchTestRunSummary)(testRunId);
+        if (!testRunSummary) {
+            core.info(`Unable to fetch test run summary for test run ${testRunId}`);
+            continue;
+        }
+        resultSummaryStrings.push((0, markdownRenderer_1.getTestRunStatusMarkdown)(testRunSummary.test_run_status));
+        const checks = await (0, k6helper_1.fetchChecks)(testRunId);
+        const markdownSummary = (0, markdownRenderer_1.generateMarkdownSummary)(testRunSummary.metrics_summary, checks);
+        resultSummaryStrings.push(markdownSummary);
+        resultSummaryStrings.push('\n');
+        testRunIndex++;
     }
-    const comment = `# Performance Test Results 🚀
-
-  Select a test run from below to view the test progress and results on Grafana Cloud K6:
-
-  ${testRunUrls}
-  `;
+    const comment = resultSummaryStrings.join('\n');
     let pullRequestNumber;
     try {
         pullRequestNumber = await getPullRequestNumber();
@@ -35390,10 +35547,6 @@ async function run() {
                         for (const [script, url] of Object.entries(target)) {
                             console.log(`  ${(0, k6helper_1.cleanScriptPath)(script)}: ${url}`);
                         }
-                        if (shouldCommentCloudTestRunUrlOnPR) {
-                            // Generate PR comment with test run URLs
-                            allPromises.push((0, githubHelper_1.generatePRComment)(target));
-                        }
                     }
                 }
                 return true;
@@ -35472,6 +35625,10 @@ async function run() {
             }
         }
         await Promise.all(allPromises);
+        if (shouldCommentCloudTestRunUrlOnPR) {
+            // Generate PR comment with test run URLs
+            await (0, githubHelper_1.generatePRComment)(TEST_RESULT_URLS_MAP);
+        }
         if (!allTestsPassed) {
             console.log('🚨 Some tests failed');
             process.exit(1);
@@ -35707,11 +35864,18 @@ exports.cleanScriptPath = cleanScriptPath;
 exports.isCloudIntegrationEnabled = isCloudIntegrationEnabled;
 exports.generateK6RunCommand = generateK6RunCommand;
 exports.executeRunK6Command = executeRunK6Command;
+exports.extractTestRunId = extractTestRunId;
+exports.fetchTestRunSummary = fetchTestRunSummary;
+exports.fetchChecks = fetchChecks;
 // Common helper functions used in the action
 const core = __importStar(__nccwpck_require__(7484));
 const child_process_1 = __nccwpck_require__(5317);
 const path_1 = __importDefault(__nccwpck_require__(6928));
+const apiUtils_1 = __nccwpck_require__(890);
 const k6OutputParser_1 = __nccwpck_require__(7076);
+function getK6CloudBaseUrl() {
+    return process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io';
+}
 /**
  * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
  * A test path is considered valid if the command returns an exit code of 0.
@@ -35842,6 +36006,318 @@ function executeRunK6Command(command, totalTestRuns, testResultUrlsMap, debug) {
     child.stdout?.on('data', (data) => (0, k6OutputParser_1.parseK6Output)(data, testResultUrlsMap, totalTestRuns, debug));
     child.stderr?.on('data', (data) => process.stderr.write(`🚨 ${data.toString()}`));
     return child;
+}
+/**
+ * Extracts the test run ID from a Grafana Cloud K6 URL.
+ *
+ * @param {string} testRunUrl - The URL of the test run (e.g., https://xxx.grafana.net/a/k6-app/runs/4050582)
+ * @returns {string | null} - The test run ID or null if not found
+ */
+function extractTestRunId(testRunUrl) {
+    const match = testRunUrl.match(/\/runs\/(\d+)$/);
+    return match ? match[1] : null;
+}
+/**
+ * Fetches the test run summary from the Grafana Cloud K6 API.
+ * Uses retry mechanism with exponential backoff for reliability.
+ * Will automatically retry on transient errors and server errors, but not on client errors like 404 or 401.
+ *
+ * @param {string} testRunId - The ID of the test run to fetch the summary for
+ * @returns {TestRunSummary | undefined} The test run summary or undefined if there was an error
+ */
+async function fetchTestRunSummary(testRunId) {
+    const baseUrl = getK6CloudBaseUrl();
+    const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary`;
+    return (0, apiUtils_1.apiRequest)(url);
+}
+/**
+ * Fetches the checks for a test run from the Grafana Cloud K6 API.
+ * Uses retry mechanism with exponential backoff for reliability.
+ * Will automatically retry on transient errors and server errors, but not on client errors like 404 or 401.
+ *
+ * @param {string} testRunId - The ID of the test run to fetch checks for
+ * @returns {Promise<Check[]>} Array of checks or empty array if there was an error
+ */
+async function fetchChecks(testRunId) {
+    const baseUrl = getK6CloudBaseUrl();
+    const url = `${baseUrl}/v4/test_runs(${testRunId})/checks?$select=name,metric_summary`;
+    const response = await (0, apiUtils_1.apiRequest)(url);
+    // If the API request fails, return an empty array
+    if (!response) {
+        return [];
+    }
+    // Return the checks array from the response
+    return response.value;
+}
+
+
+/***/ }),
+
+/***/ 953:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.formatNumber = formatNumber;
+exports.formatFloat = formatFloat;
+exports.getTrendSummaryMarkdown = getTrendSummaryMarkdown;
+exports.getHttpMetricsMarkdown = getHttpMetricsMarkdown;
+exports.getWebSocketMetricsMarkdown = getWebSocketMetricsMarkdown;
+exports.getGrpcMetricsMarkdown = getGrpcMetricsMarkdown;
+exports.getBrowserMetricsMarkdown = getBrowserMetricsMarkdown;
+exports.getChecksMarkdown = getChecksMarkdown;
+exports.getThresholdsMarkdown = getThresholdsMarkdown;
+exports.getTestRunStatusMarkdown = getTestRunStatusMarkdown;
+exports.generateMarkdownSummary = generateMarkdownSummary;
+/**
+ * Formats a number with commas as thousand separators
+ * @param value The number to format, or undefined
+ * @param defaultValue The default value to return if value is undefined
+ * @returns Formatted number string
+ */
+function formatNumber(value, defaultValue = '0') {
+    if (value === undefined || value === null) {
+        return defaultValue;
+    }
+    return value.toLocaleString();
+}
+/**
+ * Formats a float with optional unit
+ * @param value The float to format, or undefined
+ * @param unit Optional unit to append (e.g., 'ms')
+ * @param defaultValue The default value to return if value is undefined
+ * @returns Formatted float string with unit
+ */
+function formatFloat(value, unit = '', defaultValue = '0') {
+    if (value === undefined || value === null) {
+        return defaultValue;
+    }
+    const formattedValue = value.toFixed(2);
+    return unit ? `${formattedValue} ${unit}` : formattedValue;
+}
+/**
+ * Generates markdown for trend summary data
+ * @param trendSummary The trend summary data
+ * @param title The title for the trend summary section
+ * @returns Markdown string for the trend summary
+ */
+function getTrendSummaryMarkdown(trendSummary, title) {
+    if (!trendSummary)
+        return '';
+    const trendSummaryStrings = [];
+    trendSummaryStrings.push(title);
+    trendSummaryStrings.push(`  - ⬇️ Minimum: <b>${formatFloat(trendSummary.min, 'ms')}</b> ⬆️ Maximum: <b>${formatFloat(trendSummary.max, 'ms')}</b>`);
+    trendSummaryStrings.push(`  - ⏺️ Average: <b>${formatFloat(trendSummary.mean, 'ms')}</b> 🔀 Standard Deviation: <b>${formatFloat(trendSummary.stdev, 'ms')}</b> `);
+    trendSummaryStrings.push(`  - 🔝 P95: <b>${formatFloat(trendSummary.p95, 'ms')}</b> 🚀 P99: <b>${formatFloat(trendSummary.p99, 'ms')}</b> `);
+    return trendSummaryStrings.join('\n');
+}
+/**
+ * Generates markdown for HTTP metrics
+ * @param httpMetrics HTTP metrics data
+ * @returns Markdown string for HTTP metrics
+ */
+function getHttpMetricsMarkdown(httpMetrics) {
+    if (!httpMetrics || Object.keys(httpMetrics).length === 0) {
+        return [];
+    }
+    const markdownSections = [];
+    markdownSections.push(`### 🌐 HTTP Metrics`);
+    markdownSections.push('');
+    markdownSections.push(`- ⏳ 95th Percentile Response Time: **${formatFloat(httpMetrics.duration?.p95, 'ms')}** ⚡`);
+    markdownSections.push(`- 🔢  Total Requests: **${formatNumber(httpMetrics.requests_count)}**`);
+    markdownSections.push(`- ⚠️ Failed Requests: **${formatNumber(httpMetrics.failures_count)}**`);
+    markdownSections.push(`- 🚀 Average Request Rate: **${formatFloat(httpMetrics.rps_mean)}**`);
+    markdownSections.push(`- 🔝 Peak RPS: **${formatFloat(httpMetrics.rps_max)}**`);
+    markdownSections.push(`- ${getTrendSummaryMarkdown(httpMetrics.duration, '🕒 Request Duration')}`);
+    markdownSections.push('');
+    return markdownSections;
+}
+/**
+ * Generates markdown for WebSocket metrics
+ * @param wsMetrics WebSocket metrics data
+ * @returns Markdown string for WebSocket metrics
+ */
+function getWebSocketMetricsMarkdown(wsMetrics) {
+    if (!wsMetrics || Object.keys(wsMetrics).length === 0) {
+        return [];
+    }
+    const markdownSections = [];
+    markdownSections.push(`### 🔌 WebSocket Metrics`);
+    markdownSections.push('');
+    markdownSections.push(`- 📤 Messages Sent: **${formatNumber(wsMetrics.msgs_sent)}**`);
+    markdownSections.push(`- 📥 Messages Received: **${formatNumber(wsMetrics.msgs_received)}**`);
+    markdownSections.push(`- 👥 Total Sessions: **${formatNumber(wsMetrics.sessions)}**`);
+    markdownSections.push(`- ${getTrendSummaryMarkdown(wsMetrics.session_duration, '⏱️ Session Duration')}`);
+    markdownSections.push(`- ${getTrendSummaryMarkdown(wsMetrics.connecting, '🔌 Connection Time')}`);
+    markdownSections.push('');
+    return markdownSections;
+}
+/**
+ * Generates markdown for gRPC metrics
+ * @param grpcMetrics gRPC metrics data
+ * @returns Markdown string for gRPC metrics
+ */
+function getGrpcMetricsMarkdown(grpcMetrics) {
+    if (!grpcMetrics || Object.keys(grpcMetrics).length === 0) {
+        return [];
+    }
+    const markdownSections = [];
+    markdownSections.push(`### 📡 gRPC Metrics`);
+    markdownSections.push('');
+    markdownSections.push(`The 95th percentile response time of the system being tested was **${formatFloat(grpcMetrics.duration?.p95)}** and **${formatNumber(grpcMetrics.requests_count)}** requests were made at an average request rate of **${formatFloat(grpcMetrics.rps_mean)}** requests/second.`);
+    markdownSections.push('<details>');
+    markdownSections.push('<summary><strong>gRPC Metrics</strong></summary>\n');
+    markdownSections.push('| Metric | Value |');
+    markdownSections.push('|--------|-------|');
+    markdownSections.push(`| Total Requests | ${formatNumber(grpcMetrics.requests_count)} |`);
+    markdownSections.push(`| Average RPS | ${formatFloat(grpcMetrics.rps_mean)} |`);
+    markdownSections.push(`| Peak RPS | ${formatFloat(grpcMetrics.rps_max)} |`);
+    const durationMean = grpcMetrics.duration?.mean;
+    markdownSections.push(`| Average Duration | ${formatFloat(durationMean, 'ms')} |`);
+    markdownSections.push('</details>\n');
+    return markdownSections;
+}
+/**
+ * Generates markdown for browser metrics
+ * @param browserMetrics Browser metrics data
+ * @returns Markdown string for browser metrics
+ */
+function getBrowserMetricsMarkdown(browserMetrics) {
+    if (!browserMetrics || Object.keys(browserMetrics).length === 0) {
+        return [];
+    }
+    const markdownSections = [];
+    markdownSections.push(`### 🖥️ Browser Metrics`);
+    markdownSections.push('');
+    markdownSections.push('<details>');
+    markdownSections.push('<summary><strong>Browser Metrics</strong></summary>\n');
+    markdownSections.push('| Metric | Value |');
+    markdownSections.push('|--------|-------|');
+    markdownSections.push(`| Data Received | ${formatNumber(browserMetrics.browser_data_received)} |`);
+    markdownSections.push(`| Data Sent | ${formatNumber(browserMetrics.browser_data_sent)} |`);
+    markdownSections.push(`| HTTP Requests | ${formatNumber(browserMetrics.http_request_count)} |`);
+    markdownSections.push(`| HTTP Failures | ${formatNumber(browserMetrics.http_failure_count)} |`);
+    // Web Vitals
+    const vitals = ['cls', 'fcp', 'fid', 'inp', 'lcp', 'ttfb'];
+    for (const vital of vitals) {
+        const vitalP75 = browserMetrics[`web_vital_${vital}_p75`];
+        markdownSections.push(`| ${vital.toUpperCase()} p75 | ${formatFloat(vitalP75, 'ms')} |`);
+    }
+    markdownSections.push('</details>\n');
+    return markdownSections;
+}
+/**
+ * Generates markdown for checks metrics
+ * @param checksMetrics Checks metrics data
+ * @returns Markdown string for checks metrics
+ */
+function getChecksMarkdown(checksMetrics, checks) {
+    if (!checksMetrics ||
+        Object.keys(checksMetrics).length === 0 ||
+        checksMetrics.total == null ||
+        checksMetrics.total <= 0) {
+        return [];
+    }
+    const markdownSections = [];
+    if (checksMetrics.successes != null &&
+        checksMetrics.successes < checksMetrics.total) {
+        markdownSections.push(`- ❌ **${formatNumber(checksMetrics.total - checksMetrics.successes)}** out of **${formatNumber(checksMetrics.total)}** checks were not successful.`);
+        // Add checks that failed
+        if (checks && checks.length > 0) {
+            // Aggregate checks by name
+            const checksByName = {};
+            // Group checks by name and aggregate metrics
+            checks.forEach((check) => {
+                const { name, metric_summary } = check;
+                if (!checksByName[name]) {
+                    checksByName[name] = { success_count: 0, fail_count: 0 };
+                }
+                checksByName[name].success_count += metric_summary.success_count;
+                checksByName[name].fail_count += metric_summary.fail_count;
+            });
+            // Add section with failed checks
+            markdownSections.push('\n**Failed checks:**');
+            // List failed checks (those with fail_count > 0)
+            Object.entries(checksByName)
+                .filter(([, metrics]) => metrics.fail_count > 0)
+                .forEach(([name, metrics]) => {
+                markdownSections.push(`- "${name}": Failed **${formatNumber(metrics.fail_count)}**, out of **${formatNumber(metrics.success_count + metrics.fail_count)}** times.`);
+            });
+        }
+    }
+    else {
+        markdownSections.push(`- ✅ All **${formatNumber(checksMetrics.total)}** checks were successful.`);
+    }
+    return markdownSections;
+}
+/**
+ * Generates markdown for thresholds metrics
+ * @param thresholdsMetrics Thresholds metrics data
+ * @returns Markdown string for thresholds metrics
+ */
+function getThresholdsMarkdown(thresholdsMetrics) {
+    if (!thresholdsMetrics ||
+        Object.keys(thresholdsMetrics).length === 0 ||
+        thresholdsMetrics.total == null ||
+        thresholdsMetrics.total <= 0) {
+        return [];
+    }
+    const markdownSections = [];
+    if (thresholdsMetrics.successes != null &&
+        thresholdsMetrics.successes < thresholdsMetrics.total) {
+        markdownSections.push(`- ❌ **${formatNumber(thresholdsMetrics.total - thresholdsMetrics.successes)}** out of **${formatNumber(thresholdsMetrics.total)}** thresholds were not met.`);
+    }
+    else {
+        markdownSections.push(`- ✅ All **${formatNumber(thresholdsMetrics.total)}** thresholds were met.`);
+    }
+    return markdownSections;
+}
+/**
+ * Returns a markdown string representing the test run status
+ * @param testRunStatus The status code of the test run
+ * @returns Markdown string for test run status
+ */
+function getTestRunStatusMarkdown(testRunStatus) {
+    let statusString = '';
+    if (testRunStatus === undefined || testRunStatus === null) {
+        statusString = '❓ Unknown';
+    }
+    else if (testRunStatus === 3) {
+        statusString = '✅ Passed';
+    }
+    else if (testRunStatus === 4) {
+        statusString = '⚠️ Timed out';
+    }
+    else {
+        statusString = '❌ Failed';
+    }
+    return `- **Overall Status:** ${statusString}`;
+}
+/**
+ * Generates a complete markdown summary from metrics data
+ * @param metricsSummary The complete metrics summary object
+ * @returns Markdown string for all metrics
+ */
+function generateMarkdownSummary(metricsSummary, checks) {
+    if (!metricsSummary)
+        return 'No metrics data available.';
+    const markdownSections = [];
+    // Add checks summary
+    markdownSections.push(...getChecksMarkdown(metricsSummary.checks_metric_summary, checks));
+    // Add thresholds summary
+    markdownSections.push(...getThresholdsMarkdown(metricsSummary.thresholds_summary));
+    // Add HTTP metrics
+    markdownSections.push(...getHttpMetricsMarkdown(metricsSummary.http_metric_summary));
+    // Add WebSocket metrics
+    markdownSections.push(...getWebSocketMetricsMarkdown(metricsSummary.ws_metric_summary));
+    // Add gRPC metrics
+    markdownSections.push(...getGrpcMetricsMarkdown(metricsSummary.grpc_metric_summary));
+    // Add browser metrics
+    markdownSections.push(...getBrowserMetricsMarkdown(metricsSummary.browser_metric_summary));
+    return markdownSections.length
+        ? markdownSections.join('\n')
+        : 'No metrics data available.';
 }
 
 

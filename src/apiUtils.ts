@@ -118,7 +118,7 @@ export async function apiRequest<T>(
     // Add auth token if available and not already set
     const authHeaders = options.headers as Record<string, string>
     if (process.env.K6_CLOUD_TOKEN && !authHeaders['Authorization']) {
-      authHeaders['Authorization'] = `Token ${process.env.K6_CLOUD_TOKEN}`
+      authHeaders['Authorization'] = `Token user-token`
     }
 
     // Use our retry mechanism
