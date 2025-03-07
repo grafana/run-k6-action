@@ -36027,7 +36027,8 @@ function extractTestRunId(testRunUrl) {
  */
 async function fetchTestRunSummary(testRunId) {
     const baseUrl = getK6CloudBaseUrl();
-    const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary`;
+    console.log(`Fetching test run summary for test run ${testRunId}`);
+    const url = `${baseUrl}/cloud/v5/test_runs(14)/result_summary?$select=metrics_summary`;
     return (0, apiUtils_1.apiRequest)(url);
 }
 /**
@@ -36040,7 +36041,8 @@ async function fetchTestRunSummary(testRunId) {
  */
 async function fetchChecks(testRunId) {
     const baseUrl = getK6CloudBaseUrl();
-    const url = `${baseUrl}/v4/test_runs(${testRunId})/checks?$select=name,metric_summary`;
+    console.log(`Fetching checks for test run ${testRunId}`);
+    const url = `${baseUrl}/v4/test_runs(14)/checks?$select=name,metric_summary`;
     const response = await (0, apiUtils_1.apiRequest)(url);
     // If the API request fails, return an empty array
     if (!response) {

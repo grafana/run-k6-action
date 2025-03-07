@@ -216,7 +216,8 @@ export async function fetchTestRunSummary(
   testRunId: string
 ): Promise<TestRunSummary | undefined> {
   const baseUrl = getK6CloudBaseUrl()
-  const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary`
+  console.log(`Fetching test run summary for test run ${testRunId}`)
+  const url = `${baseUrl}/cloud/v5/test_runs(14)/result_summary?$select=metrics_summary`
 
   return apiRequest<TestRunSummary>(url)
 }
@@ -231,7 +232,8 @@ export async function fetchTestRunSummary(
  */
 export async function fetchChecks(testRunId: string): Promise<Check[]> {
   const baseUrl = getK6CloudBaseUrl()
-  const url = `${baseUrl}/v4/test_runs(${testRunId})/checks?$select=name,metric_summary`
+  console.log(`Fetching checks for test run ${testRunId}`)
+  const url = `${baseUrl}/v4/test_runs(14)/checks?$select=name,metric_summary`
 
   const response = await apiRequest<ChecksResponse>(url)
 
