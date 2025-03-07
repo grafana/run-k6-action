@@ -28,22 +28,3 @@ export async function findTestsToRun(path: string): Promise<string[]> {
   const files = await globber.glob()
   return files.filter((file) => !isDirectory(file))
 }
-
-/**
- * Formats a number with commas as thousands separators
- */
-export function formatNumber(num: number | undefined): string {
-  if (num === undefined || num === null) return 'N/A'
-  return num.toLocaleString()
-}
-
-/**
- * Formats a floating point number with 2 decimal places
- */
-export function formatFloat(
-  num: number | undefined,
-  unit: string = ''
-): string {
-  if (num === undefined || num === null) return 'N/A'
-  return `${num.toFixed(2)}${unit}`
-}

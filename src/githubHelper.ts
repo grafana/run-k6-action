@@ -8,9 +8,11 @@ import {
   cleanScriptPath,
   extractTestRunId,
   fetchTestRunSummary,
-  generateMetricsSummaryMarkdown,
-  getMarkdownStringForTestRunStatus,
 } from './k6helper'
+import {
+  generateMetricsSummary,
+  getTestRunStatusMarkdown,
+} from './markdownRenderer'
 import { TestRunUrlsMap } from './types'
 
 // Create a watermark function instead of a constant
@@ -198,10 +200,10 @@ export async function generatePRComment(
     }
 
     resultSummaryStrings.push(
-      getMarkdownStringForTestRunStatus(testRunSummary.test_run_status)
+      getTestRunStatusMarkdown(testRunSummary.test_run_status)
     )
 
-    const markdownSummary = generateMetricsSummaryMarkdown(
+    const markdownSummary = generateMetricsSummary(
       testRunSummary.metrics_summary
     )
 
