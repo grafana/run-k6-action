@@ -1,5 +1,7 @@
+import { isNumber } from '@latest-version/orval-core'
 import {
   BrowserMetricSummary,
+  Check,
   ChecksMetricSummary,
   GrpcMetricSummary,
   HttpMetricSummary,
@@ -239,7 +241,8 @@ export function getBrowserMetricsMarkdown(
  * @returns Markdown string for checks metrics
  */
 export function getChecksMarkdown(
-  checksMetrics: ChecksMetricSummary | null
+  checksMetrics: ChecksMetricSummary | null,
+  checks: Check[] | null
 ): string[] {
   if (
     !checksMetrics ||
@@ -253,15 +256,42 @@ export function getChecksMarkdown(
   const markdownSections = []
 
   if (
-    checksMetrics.successes != null &&
+    isNumber(checksMetrics.successes) &&
     checksMetrics.successes < checksMetrics.total
   ) {
     markdownSections.push(
       `- ❌ **${formatNumber(checksMetrics.total - checksMetrics.successes)}** out of **${formatNumber(checksMetrics.total)}** checks were not successful.`
     )
+
+    // Add checks that failed
+    if (checks && checks.length > 0) {
+      // Aggregate checks by name
+      const checksByName: Record<
+        string,
+        { success_count: number; fail_count: number }
+      > = {}
+
+      // Group checks by name and aggregate metrics
+      checks.forEach((check) => {
+        const { name, metric_summary } = check
+        if (!checksByName[name]) {
+          checksByName[name] = { success_count: 0, fail_count: 0 }
+        }
+        checksByName[name].success_count += metric_summary.success_count
+        checksByName[name].fail_count += metric_summary.fail_count
+      })
+      // List failed checks (those with fail_count > 0)
+      Object.entries(checksByName)
+        .filter(([, metrics]) => metrics.fail_count > 0)
+        .forEach(([name, metrics]) => {
+          markdownSections.push(
+            `  - \`${name}\`: Failed **${formatNumber(metrics.fail_count)}**, out of **${formatNumber(metrics.success_count + metrics.fail_count)}** times.`
+          )
+        })
+    }
   } else {
     markdownSections.push(
-      `-✅ All **${formatNumber(checksMetrics.total)}** checks were successful.`
+      `- ✅ All **${formatNumber(checksMetrics.total)}** checks were successful.`
     )
   }
 
@@ -331,8 +361,9 @@ export function getTestRunStatusMarkdown(
  * @param metricsSummary The complete metrics summary object
  * @returns Markdown string for all metrics
  */
-export function generateMetricsSummary(
-  metricsSummary: MetricsSummary | null | undefined
+export function generateMarkdownSummary(
+  metricsSummary: MetricsSummary | null | undefined,
+  checks: Check[] | null
 ): string {
   if (!metricsSummary) return 'No metrics data available.'
 
@@ -340,7 +371,7 @@ export function generateMetricsSummary(
 
   // Add checks summary
   markdownSections.push(
-    ...getChecksMarkdown(metricsSummary.checks_metric_summary)
+    ...getChecksMarkdown(metricsSummary.checks_metric_summary, checks)
   )
 
   // Add thresholds summary
@@ -368,7 +399,5 @@ export function generateMetricsSummary(
     ...getBrowserMetricsMarkdown(metricsSummary.browser_metric_summary)
   )
 
-  return markdownSections.length
-    ? markdownSections.join('\n')
-    : 'No metrics data available.'
+  return markdownSections.length ? markdownSections.join('\n') : ''
 }
