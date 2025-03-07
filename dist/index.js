@@ -35163,7 +35163,9 @@ async function getPullRequestNumber() {
     // Use the context from the github import
     const { eventName, payload } = github.context;
     let commitSHA;
-    let pullRequestNumber = payload.pull_request ? payload.pull_request.number : undefined;
+    const pullRequestNumber = payload.pull_request
+        ? payload.pull_request.number
+        : undefined;
     if (pullRequestNumber) {
         return pullRequestNumber;
     }
@@ -35182,7 +35184,8 @@ async function getPullRequestNumber() {
         repo: github.context.repo.repo,
         commit_sha: commitSHA,
     }), openPRs = result.data.filter((pr) => pr.state === 'open'), selectedPR = openPRs.find((pr) => {
-        return github.context.payload.ref === `refs/heads/${pr.head.ref}`;
+        return (github.context.payload.ref ===
+            `refs/heads/${pr.head.ref}`);
     }) || openPRs[0];
     return selectedPR?.number;
 }
@@ -35204,7 +35207,7 @@ async function getActionCommentId(pullRequestNumber) {
         owner,
         issue_number: pullRequestNumber,
     });
-    const comment = comments.find((c) => c.body.startsWith(watermark));
+    const comment = comments.find((c) => c.body && c.body.startsWith(watermark));
     return comment?.id;
 }
 async function createOrUpdateComment(pullRequestNumber, commentBody) {
@@ -35212,7 +35215,6 @@ async function createOrUpdateComment(pullRequestNumber, commentBody) {
      * This function creates or updates the action comment on the pull request.
      *
      * @param {number} pullRequestNumber - The pull request number
-     * @param {number | undefined} commentId - The comment ID of the action comment. If the comment ID is undefined, a new comment is created.
      * @param {string} commentBody - The body of the comment
      *
      * @export
@@ -35226,13 +35228,13 @@ async function createOrUpdateComment(pullRequestNumber, commentBody) {
     const { owner, repo } = github.context.repo;
     const watermark = getWatermark();
     const commentId = await getActionCommentId(pullRequestNumber);
-    commentBody = watermark + commentBody;
+    const fullCommentBody = watermark + commentBody;
     if (commentId) {
         await octokit.rest.issues.updateComment({
             repo,
             owner,
             comment_id: commentId,
-            body: commentBody,
+            body: fullCommentBody,
         });
     }
     else {
@@ -35240,7 +35242,7 @@ async function createOrUpdateComment(pullRequestNumber, commentBody) {
             repo,
             owner,
             issue_number: pullRequestNumber,
-            body: commentBody,
+            body: fullCommentBody,
         });
     }
 }
@@ -35261,7 +35263,7 @@ async function generatePRComment(testRunUrlsMap) {
     for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
         testRunUrls += `🔗 [${(0, k6helper_1.cleanScriptPath)(scriptPath)}](${testRunUrl})\n`;
     }
-    let comment = `# Performance Test Results 🚀
+    const comment = `# Performance Test Results 🚀
 
   Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
@@ -35273,7 +35275,7 @@ async function generatePRComment(testRunUrlsMap) {
     }
     catch (error) {
         core.debug(`Got following error in getting pull request number`);
-        core.debug(error);
+        core.debug(error instanceof Error ? error.message : String(error));
         return; // Return early if there's an error getting the PR number
     }
     if (!pullRequestNumber) {
@@ -35287,7 +35289,7 @@ async function generatePRComment(testRunUrlsMap) {
     catch (error) {
         core.info('Error creating comment on pull request');
         core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
-        core.debug(error);
+        core.debug(error instanceof Error ? error.message : String(error));
     }
 }
 
@@ -35377,7 +35379,7 @@ async function run() {
             return;
         }
         const isCloud = (0, k6helper_1.isCloudIntegrationEnabled)();
-        const commands = testPaths.map(testPath => (0, k6helper_1.generateK6RunCommand)(testPath, flags, isCloud, cloudRunLocally)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
+        const commands = testPaths.map((testPath) => (0, k6helper_1.generateK6RunCommand)(testPath, flags, isCloud, cloudRunLocally)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
             set: (target, key, value) => {
                 target[key] = value;
                 if (Object.keys(target).length === TOTAL_TEST_RUNS) {
@@ -35395,25 +35397,29 @@ async function run() {
                     }
                 }
                 return true;
-            }
+            },
         });
         let allTestsPassed = true;
         if (parallel) {
             const childProcesses = [];
-            commands.forEach(command => {
+            commands.forEach((command) => {
                 const child = (0, k6helper_1.executeRunK6Command)(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
                 childProcesses.push(child);
-                TEST_PIDS.push(child.pid);
-                allPromises.push(new Promise(resolve => {
+                if (child.pid !== undefined) {
+                    TEST_PIDS.push(child.pid);
+                }
+                allPromises.push(new Promise((resolve) => {
                     child.on('exit', (code, signal) => {
-                        const index = TEST_PIDS.indexOf(child.pid);
-                        if (index > -1) {
-                            TEST_PIDS.splice(index, 1);
+                        if (child.pid !== undefined) {
+                            const index = TEST_PIDS.indexOf(child.pid);
+                            if (index > -1) {
+                                TEST_PIDS.splice(index, 1);
+                            }
                         }
                         if (code !== 0) {
                             if (failFast) {
                                 console.log('🚨 Fail fast enabled. Stopping further tests.');
-                                childProcesses.forEach(child => {
+                                childProcesses.forEach((child) => {
                                     if (!child.killed) {
                                         child.kill('SIGINT');
                                     }
@@ -35436,12 +35442,16 @@ async function run() {
         else {
             for (const command of commands) {
                 const child = (0, k6helper_1.executeRunK6Command)(command, TOTAL_TEST_RUNS, TEST_RESULT_URLS_MAP, debug);
-                TEST_PIDS.push(child.pid);
-                await new Promise(resolve => {
+                if (child.pid !== undefined) {
+                    TEST_PIDS.push(child.pid);
+                }
+                await new Promise((resolve) => {
                     child.on('exit', (code, signal) => {
-                        const index = TEST_PIDS.indexOf(child.pid);
-                        if (index > -1) {
-                            TEST_PIDS.splice(index, 1);
+                        if (child.pid !== undefined) {
+                            const index = TEST_PIDS.indexOf(child.pid);
+                            if (index > -1) {
+                                TEST_PIDS.splice(index, 1);
+                            }
                         }
                         if (code !== 0) {
                             if (failFast) {
@@ -35470,15 +35480,17 @@ async function run() {
     catch (error) {
         if (error instanceof Error)
             core.setFailed(error.message);
+        else if (error)
+            core.setFailed(String(error));
     }
 }
 process.on('SIGINT', () => {
     console.log('🚨 Caught SIGINT. Stoping all tests');
-    TEST_PIDS.forEach(pid => {
+    TEST_PIDS.forEach((pid) => {
         try {
             process.kill(pid, 'SIGINT');
         }
-        catch (error) {
+        catch {
             console.error(`Failed to kill process with PID ${pid}`);
         }
     });
@@ -35509,11 +35521,11 @@ const REGEX_EXPRESSIONS = {
     // Init   [   0% ] Validating script options
     // Run    [  17% ] 14.0s/35s
     // Run    [   0% ] Initializing
-    cloudRunExecution: /Init|Run\s+\[\s+\d+%\s+\]/g
+    cloudRunExecution: /Init|Run\s+\[\s+\d+%\s+\]/g,
 }, TEST_RUN_PROGRESS_MSG_REGEXES = [
     REGEX_EXPRESSIONS.runningIteration,
     REGEX_EXPRESSIONS.executionProgress,
-    REGEX_EXPRESSIONS.cloudRunExecution
+    REGEX_EXPRESSIONS.cloudRunExecution,
 ];
 function extractTestRunUrl(data, testRunUrlsMap) {
     /**
@@ -35533,7 +35545,9 @@ function extractTestRunUrl(data, testRunUrlsMap) {
     // Extracting the output URL
     const outputMatch = data.match(REGEX_EXPRESSIONS.output);
     const output = outputMatch ? outputMatch[1] : null;
-    const outputCloudUrlMatch = output ? output.match(REGEX_EXPRESSIONS.outputCloudUrl) : null;
+    const outputCloudUrlMatch = output
+        ? output.match(REGEX_EXPRESSIONS.outputCloudUrl)
+        : null;
     const outputCloudUrl = outputCloudUrlMatch ? outputCloudUrlMatch[1] : output;
     if (scriptPath && output) {
         testRunUrlsMap[scriptPath] = outputCloudUrl || '';
@@ -35568,22 +35582,31 @@ function checkIfK6ASCIIArt(data) {
      * 2. The function also checks if the data contains ".io" at the end.
      *
      * */
-    if (!data.includes(".io")) {
+    if (!data.includes('.io')) {
         return false;
     }
     // During cloud execution, the ASCII art is printed with %0A instead of \n
-    data = data.replace(/%0A/g, "\n");
-    data = data.slice(0, data.indexOf(".io") + 3);
-    let K6_ASCII_ART_CHARS = [
-        '|', ' ', '\n', '/',
-        '‾', '(', ')', '_',
-        '.', 'i', 'o', '\\'
-    ], dataChars = new Set(data);
+    let processedData = data.replace(/%0A/g, '\n');
+    processedData = processedData.slice(0, processedData.indexOf('.io') + 3);
+    const K6_ASCII_ART_CHARS = [
+        '|',
+        ' ',
+        '\n',
+        '/',
+        '‾',
+        '(',
+        ')',
+        '_',
+        '.',
+        'i',
+        'o',
+        '\\',
+    ], dataChars = new Set(processedData);
     if (dataChars.size !== K6_ASCII_ART_CHARS.length) {
         return false;
     }
     else {
-        for (let char of dataChars) {
+        for (const char of dataChars) {
             if (!K6_ASCII_ART_CHARS.includes(char)) {
                 return false;
             }
@@ -35593,26 +35616,26 @@ function checkIfK6ASCIIArt(data) {
 }
 function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
     /*
-    * This function is responsible for parsing the output of the k6 command.
-    * It filters out the progress lines and logs the rest of the output.
-    * It also extracts the test run URLs from the output.
-    *
-    * @param {Buffer} data - The k6 command output data
-    * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
-    * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
-    * @param {boolean} debug - A flag to determine if the k6 progress output should be shown or not.
-    *
-    * @returns {void}
-    */
+     * This function is responsible for parsing the output of the k6 command.
+     * It filters out the progress lines and logs the rest of the output.
+     * It also extracts the test run URLs from the output.
+     *
+     * @param {Buffer} data - The k6 command output data
+     * @param {TestRunUrlsMap | null} testRunUrlsMap - The map containing the script path and output URL. If null, the function will not extract test run URLs.
+     * @param {number} totalTestRuns - The total number of test runs. This is used to determine when all test run URLs have been extracted.
+     * @param {boolean} debug - A flag to determine if the k6 progress output should be shown or not.
+     *
+     * @returns {void}
+     */
     const dataString = data.toString(), lines = dataString.split('\n');
     // Extract test run URLs
     if (testRunUrlsMap && Object.keys(testRunUrlsMap).length < totalTestRuns) {
         const testRunUrlExtracted = extractTestRunUrl(dataString, testRunUrlsMap), k6ASCIIArt = checkIfK6ASCIIArt(dataString);
         if ((testRunUrlExtracted || k6ASCIIArt) && !debug) {
             /*
-                If either the test run URL was extracted successfully or the k6 ASCII art was found,
-                and the k6 progress output is not to be shown, then return.
-            */
+                      If either the test run URL was extracted successfully or the k6 ASCII art was found,
+                      and the k6 progress output is not to be shown, then return.
+                  */
             return;
         }
     }
@@ -35626,7 +35649,7 @@ function parseK6Output(data, testRunUrlsMap, totalTestRuns, debug) {
         });
         if (filteredLines.length < lines.length) {
             // ignore empty lines only when progress lines output was ignored.
-            if (filteredLines.join("") === "") {
+            if (filteredLines.join('') === '') {
                 return;
             }
         }
@@ -35702,7 +35725,7 @@ async function validateTestPaths(testPaths, flags) {
         throw new Error('No test files found');
     }
     console.log(`🔍 Validating test run files.`);
-    const validK6TestPaths = [], command = "k6", defaultArgs = ["inspect", "--execution-requirements", ...flags];
+    const validK6TestPaths = [], command = 'k6', defaultArgs = ['inspect', '--execution-requirements', ...flags];
     const allPromises = [];
     testPaths.forEach(async (testPath) => {
         const args = [...defaultArgs, testPath];
@@ -35710,8 +35733,8 @@ async function validateTestPaths(testPaths, flags) {
             stdio: ['inherit', 'ignore', 'inherit'], // 'ignore' is for stdout
             detached: false,
         });
-        allPromises.push(new Promise(resolve => {
-            child.on('exit', (code, signal) => {
+        allPromises.push(new Promise((resolve) => {
+            child.on('exit', (code) => {
                 if (code === 0) {
                     validK6TestPaths.push(testPath);
                 }
@@ -35758,10 +35781,12 @@ function cleanScriptPath(scriptPath) {
  * @return {boolean} - True if the cloud integration is enabled, false otherwise
  */
 function isCloudIntegrationEnabled() {
-    if (process.env.K6_CLOUD_TOKEN === undefined || process.env.K6_CLOUD_TOKEN === '') {
+    if (process.env.K6_CLOUD_TOKEN === undefined ||
+        process.env.K6_CLOUD_TOKEN === '') {
         return false;
     }
-    if (process.env.K6_CLOUD_PROJECT_ID === undefined || process.env.K6_CLOUD_PROJECT_ID === '') {
+    if (process.env.K6_CLOUD_PROJECT_ID === undefined ||
+        process.env.K6_CLOUD_PROJECT_ID === '') {
         throw new Error('K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set');
     }
     return true;
@@ -35778,31 +35803,28 @@ function isCloudIntegrationEnabled() {
  */
 function generateK6RunCommand(path, flags, isCloud, cloudRunLocally) {
     let command;
-    const args = [
-        `--address=`,
-        ...(flags ? flags.split(' ') : []),
-    ];
+    const args = [`--address=`, ...(flags ? flags.split(' ') : [])];
     if (isCloud) {
         // Cloud execution is possible for the test
         if (cloudRunLocally) {
             // Execute tests locally and upload results to cloud
-            command = "k6 run";
+            command = 'k6 run';
             args.push(`--out=cloud`);
         }
         else {
             // Execute tests in cloud
-            command = "k6 cloud";
+            command = 'k6 cloud';
         }
     }
     else {
         // Local execution
-        command = "k6 run";
+        command = 'k6 run';
     }
     // Add path the arguments list
     args.push(path);
     // Append arguments to the command
     command = `${command} ${args.join(' ')}`;
-    core.debug("🤖 Generated command: " + command);
+    core.debug('🤖 Generated command: ' + command);
     return command;
 }
 function executeRunK6Command(command, totalTestRuns, testResultUrlsMap, debug) {
@@ -35878,7 +35900,7 @@ function isDirectory(filepath) {
     try {
         return fs.statSync(filepath).isDirectory();
     }
-    catch (err) {
+    catch {
         // Ignore error
         return false;
     }
@@ -35892,7 +35914,7 @@ function isDirectory(filepath) {
 async function findTestsToRun(path) {
     const globber = await glob.create(path);
     const files = await globber.glob();
-    return files.filter(file => !isDirectory(file));
+    return files.filter((file) => !isDirectory(file));
 }
 
 

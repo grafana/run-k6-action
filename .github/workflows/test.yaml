@@ -3,6 +3,7 @@ on:
   push:
 
 jobs:
+
   unit-tests:
     runs-on: ubuntu-latest
     steps:
@@ -16,6 +17,12 @@ jobs:
       - name: Install dependencies
         id: install
         run: npm ci
+      - name: Run lint check
+        id: lint
+        run: npm run lint
+      - name: Run format check
+        id: format
+        run: npm run format:check
       - name: Run tests
         id: test
         run: npm run test:coverage

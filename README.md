@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img
+<img
     src="./images/k6.gif"
     width="600"
     style="pointer-events: none;" />
@@ -21,7 +21,6 @@ It is a wrapper over `k6 run`, with support for globs, parallel execution, fail-
 ## Inputs
 
 The following inputs can be used as `step.with` key:
-
 
 | Name                  | Type    | Required | Default | Description                                                                                                                                                                                                                                                                                          |
 | --------------------- | ------- | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -178,11 +177,13 @@ To run the tests locally, follow these steps:
    ```
 
 For development, you can use watch mode to automatically run tests as files change:
+
 ```bash
 npm run test:watch
 ```
 
 To generate a test coverage report:
+
 ```bash
 npm run test:coverage
 ```

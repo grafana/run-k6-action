@@ -1,4 +1,4 @@
-import { browser } from 'k6/experimental/browser';
+import { browser } from 'k6/experimental/browser'
 
 export const options = {
   scenarios: {
@@ -14,12 +14,12 @@ export const options = {
 }
 
 export default async function () {
-  const page = browser.newPage();
+  const page = browser.newPage()
 
   try {
-    await page.goto('https://test.k6.io/');
-    page.screenshot({ path: 'screenshots/screenshot.png' });
+    await page.goto('https://test.k6.io/')
+    page.screenshot({ path: 'screenshots/screenshot.png' })
   } finally {
-    page.close();
+    page.close()
   }
 }

@@ -10,17 +10,31 @@
     "testRelease": "npm run package; gh act release",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write '**/*.{ts,js,json,md}'",
+    "format:check": "prettier --check '**/*.{ts,js,json,md}'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^9.21.0",
     "@types/chmodr": "^1.0.3",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
     "@vitest/coverage-v8": "^1.2.1",
-    "typescript": "^5.3.3",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-import-resolver-typescript": "^3.8.3",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.2.5",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.0",
     "vitest": "^1.2.1"
   },
   "dependencies": {
@@ -33,5 +47,12 @@
     "@vercel/ncc": "^0.38.1",
     "chmodr": "^1.2.0",
     "fs-extra": "^11.2.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --ignore-unknown --write",
+      "bash -c 'tsc --noEmit'"
+    ]
   }
 }

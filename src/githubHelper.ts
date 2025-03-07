@@ -1,14 +1,19 @@
-import * as core from '@actions/core';
-import * as github from '@actions/github';
-import { cleanScriptPath } from './k6helper';
-import { TestRunUrlsMap } from './types';
+import * as core from '@actions/core'
+import * as github from '@actions/github'
+import { Context } from '@actions/github/lib/context'
+import { WebhookPayload } from '@actions/github/lib/interfaces'
+import { GitHub } from '@actions/github/lib/utils'
+import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods'
+import { cleanScriptPath } from './k6helper'
+import { TestRunUrlsMap } from './types'
 
 // Create a watermark function instead of a constant
-const getWatermark = () => `<!-- k6 GitHub Action Comment: ${github.context.job} -->\n`;
+const getWatermark = () =>
+  `<!-- k6 GitHub Action Comment: ${(github.context as Context).job} -->\n`
 
-const getOctokit = () => {
-  const token = core.getInput('github-token', { required: true });
-  return github.getOctokit(token);
+const getOctokit = (): InstanceType<typeof GitHub> => {
+  const token = core.getInput('github-token', { required: true })
+  return github.getOctokit(token)
 }
 
 export async function getPullRequestNumber(): Promise<number | undefined> {
@@ -23,43 +28,53 @@ export async function getPullRequestNumber(): Promise<number | undefined> {
   const octokit = getOctokit()
 
   // Use the context from the github import
-  const { eventName, payload } = github.context;
+  const { eventName, payload }: { eventName: string; payload: WebhookPayload } =
+    github.context as Context
 
-  let commitSHA;
-  let pullRequestNumber = payload.pull_request ? payload.pull_request.number : undefined;
+  let commitSHA: string | undefined
+  const pullRequestNumber = payload.pull_request
+    ? payload.pull_request.number
+    : undefined
 
   if (pullRequestNumber) {
-    return pullRequestNumber;
+    return pullRequestNumber
   }
 
   if (eventName === 'pull_request' || eventName === 'pull_request_target') {
-    commitSHA = payload.pull_request?.head.sha;
+    commitSHA = payload.pull_request?.head.sha
   } else if (eventName === 'push') {
-    commitSHA = payload.after;
+    commitSHA = payload.after as string | undefined
   }
 
   if (!commitSHA) {
     core.debug('Commit SHA not found, unable to get pull request number.')
-    return;
+    return
   }
 
-  const result =
-    await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+  type PullRequestResponse =
+    RestEndpointMethodTypes['repos']['listPullRequestsAssociatedWithCommit']['response']
+  type PullRequest = PullRequestResponse['data'][0]
+
+  const result = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+      owner: (github.context as Context).repo.owner,
+      repo: (github.context as Context).repo.repo,
       commit_sha: commitSHA,
     }),
-
-    openPRs = result.data.filter((pr: { state: string; }) => pr.state === 'open'),
+    openPRs = result.data.filter((pr: PullRequest) => pr.state === 'open'),
     selectedPR =
-      openPRs.find((pr: any) => {
-        return github.context.payload.ref === `refs/heads/${pr.head.ref}`;
-      }) || openPRs[0];
+      openPRs.find((pr: PullRequest) => {
+        return (
+          (github.context as Context).payload.ref ===
+          `refs/heads/${pr.head.ref}`
+        )
+      }) || openPRs[0]
 
-  return selectedPR?.number;
+  return selectedPR?.number
 }
 
-export async function getActionCommentId(pullRequestNumber: number): Promise<number | undefined> {
+export async function getActionCommentId(
+  pullRequestNumber: number
+): Promise<number | undefined> {
   /**
    * This function gets the comment ID of the action comment from the pull request.
    *
@@ -71,27 +86,34 @@ export async function getActionCommentId(pullRequestNumber: number): Promise<num
    */
   const octokit = getOctokit()
 
-  const { owner, repo } = github.context.repo;
-  const watermark = getWatermark();
+  const { owner, repo } = (github.context as Context).repo
+  const watermark = getWatermark()
+
+  type ListCommentsResponse =
+    RestEndpointMethodTypes['issues']['listComments']['response']
+  type IssueComment = ListCommentsResponse['data'][0]
 
   const { data: comments } = await octokit.rest.issues.listComments({
     repo,
     owner,
     issue_number: pullRequestNumber,
-  });
+  })
 
-  const comment = comments.find((c: any) => c.body.startsWith(watermark));
+  const comment = comments.find(
+    (c: IssueComment) => c.body && c.body.startsWith(watermark)
+  )
 
-  return comment?.id;
-
+  return comment?.id
 }
 
-export async function createOrUpdateComment(pullRequestNumber: number, commentBody: string) {
+export async function createOrUpdateComment(
+  pullRequestNumber: number,
+  commentBody: string
+): Promise<void> {
   /**
    * This function creates or updates the action comment on the pull request.
    *
    * @param {number} pullRequestNumber - The pull request number
-   * @param {number | undefined} commentId - The comment ID of the action comment. If the comment ID is undefined, a new comment is created.
    * @param {string} commentBody - The body of the comment
    *
    * @export
@@ -101,34 +123,35 @@ export async function createOrUpdateComment(pullRequestNumber: number, commentBo
    * @throws {Error} - Throws an error if the comment cannot be created or updated.
    *
    * */
-  const octokit = getOctokit();
+  const octokit = getOctokit()
 
-  const { owner, repo } = github.context.repo;
-  const watermark = getWatermark();
+  const { owner, repo } = (github.context as Context).repo
+  const watermark = getWatermark()
 
-  const commentId = await getActionCommentId(pullRequestNumber);
+  const commentId = await getActionCommentId(pullRequestNumber)
 
-  commentBody = watermark + commentBody;
+  const fullCommentBody = watermark + commentBody
 
   if (commentId) {
     await octokit.rest.issues.updateComment({
       repo,
       owner,
       comment_id: commentId,
-      body: commentBody,
-    });
-  }
-  else {
+      body: fullCommentBody,
+    })
+  } else {
     await octokit.rest.issues.createComment({
       repo,
       owner,
       issue_number: pullRequestNumber,
-      body: commentBody,
-    });
+      body: fullCommentBody,
+    })
   }
 }
 
-export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise<void> {
+export async function generatePRComment(
+  testRunUrlsMap: TestRunUrlsMap
+): Promise<void> {
   /**
    * This function posts/updates a comment containing the test run URLs if a pull request is present.
    *
@@ -138,45 +161,49 @@ export async function generatePRComment(testRunUrlsMap: TestRunUrlsMap): Promise
    * */
 
   if (Object.keys(testRunUrlsMap).length === 0) {
-    core.debug('No test result URLs found, skipping comment creation');
-    return;
+    core.debug('No test result URLs found, skipping comment creation')
+    return
   }
 
   core.debug('Generating PR comment')
 
-  let testRunUrls = '';
+  let testRunUrls = ''
   for (const [scriptPath, testRunUrl] of Object.entries(testRunUrlsMap)) {
-    testRunUrls += `🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`;
+    testRunUrls += `🔗 [${cleanScriptPath(scriptPath)}](${testRunUrl})\n`
   }
 
-  let comment = `# Performance Test Results 🚀
+  const comment = `# Performance Test Results 🚀
 
   Select a test run from below to view the test progress and results on Grafana Cloud K6:
 
   ${testRunUrls}
-  `;
+  `
 
-  let pullRequestNumber;
+  let pullRequestNumber
 
   try {
-    pullRequestNumber = await getPullRequestNumber();
-  } catch (error: any) {
-    core.debug(`Got following error in getting pull request number`);
-    core.debug(error);
-    return; // Return early if there's an error getting the PR number
+    pullRequestNumber = await getPullRequestNumber()
+  } catch (error) {
+    core.debug(`Got following error in getting pull request number`)
+    core.debug(error instanceof Error ? error.message : String(error))
+    return // Return early if there's an error getting the PR number
   }
 
   if (!pullRequestNumber) {
-    core.info('Unable to get pull request number for the commit, skipping comment creation')
-    return;
+    core.info(
+      'Unable to get pull request number for the commit, skipping comment creation'
+    )
+    return
   }
 
   try {
-    await createOrUpdateComment(pullRequestNumber, comment);
-    core.debug('Comment created successfully');
-  } catch (error: any) {
-    core.info('Error creating comment on pull request');
-    core.debug(`Following error occurred in creating comment on pull request: ${pullRequestNumber}`);
-    core.debug(error);
+    await createOrUpdateComment(pullRequestNumber, comment)
+    core.debug('Comment created successfully')
+  } catch (error) {
+    core.info('Error creating comment on pull request')
+    core.debug(
+      `Following error occurred in creating comment on pull request: ${pullRequestNumber}`
+    )
+    core.debug(error instanceof Error ? error.message : String(error))
   }
 }
