@@ -2,6 +2,7 @@
 import * as core from '@actions/core'
 import { ChildProcess, spawn } from 'child_process'
 import path from 'path'
+import { apiRequest } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
 import { TestRunSummary, TestRunUrlsMap } from './types'
 
@@ -200,29 +201,18 @@ export function extractTestRunId(testRunUrl: string): string | null {
 }
 
 /**
+ * Fetches the test run summary from the Grafana Cloud K6 API.
+ * Uses retry mechanism with exponential backoff for reliability.
+ * Will automatically retry on transient errors and server errors, but not on client errors like 404 or 401.
+ *
+ * @param {string} testRunId - The ID of the test run to fetch the summary for
  * @returns {TestRunSummary | undefined} The test run summary or undefined if there was an error
  */
 export async function fetchTestRunSummary(
   testRunId: string
 ): Promise<TestRunSummary | undefined> {
   const baseUrl = process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io/cloud/v5'
-
   const url = `${baseUrl}/test_runs(${testRunId})/result_summary?$select=metrics_summary`
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Token ${process.env.K6_CLOUD_TOKEN}`,
-    },
-  })
-
-  if (!response.ok) {
-    core.info(
-      `Failed to fetch test run summary for test run ${testRunId}: Status code: ${response.status} - ${response.statusText}`
-    )
-    core.info(`Response: ${await response.text()}`)
-    return undefined
-  }
-
-  const data = await response.json()
-  return data as TestRunSummary
+  return apiRequest<TestRunSummary>(url)
 }
