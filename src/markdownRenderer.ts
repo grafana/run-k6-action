@@ -268,24 +268,30 @@ export function getChecksMarkdown(
       // Aggregate checks by name
       const checksByName: Record<
         string,
-        { success_count: number; fail_count: number }
+        { success_count: number; fail_count: number; total_count: number }
       > = {}
 
       // Group checks by name and aggregate metrics
       checks.forEach((check) => {
         const { name, metric_summary } = check
         if (!checksByName[name]) {
-          checksByName[name] = { success_count: 0, fail_count: 0 }
+          checksByName[name] = {
+            success_count: 0,
+            fail_count: 0,
+            total_count: 0,
+          }
         }
         checksByName[name].success_count += metric_summary.success_count
         checksByName[name].fail_count += metric_summary.fail_count
+        checksByName[name].total_count +=
+          metric_summary.success_count + metric_summary.fail_count
       })
       // List failed checks (those with fail_count > 0)
       Object.entries(checksByName)
         .filter(([, metrics]) => metrics.fail_count > 0)
         .forEach(([name, metrics]) => {
           markdownSections.push(
-            `  - \`${name}\`: Failed **${formatNumber(metrics.fail_count)}**, out of **${formatNumber(metrics.success_count + metrics.fail_count)}** times.`
+            `  - \`${name}\`: Failed **${formatNumber(metrics.fail_count)}**, out of **${formatNumber(metrics.total_count)}** times.`
           )
         })
     }
