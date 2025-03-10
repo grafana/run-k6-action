@@ -196,6 +196,8 @@ export async function generatePRComment(
     }
 
     const testRunSummary = await fetchTestRunSummary(testRunId)
+    console.log(`Test run summary`)
+    console.log(JSON.stringify(testRunSummary, null, 2))
 
     if (!testRunSummary) {
       core.info(`Unable to fetch test run summary for test run ${testRunId}`)
@@ -207,7 +209,8 @@ export async function generatePRComment(
     )
 
     const checks = await fetchChecks(testRunId)
-
+    console.log(`Checks`)
+    console.log(JSON.stringify(checks, null, 2))
     const markdownSummary = generateMarkdownSummary(
       testRunSummary.metrics_summary,
       checks
