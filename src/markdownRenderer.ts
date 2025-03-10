@@ -287,6 +287,8 @@ export function getChecksMarkdown(
           metric_summary.success_count + metric_summary.fail_count
       })
       // List failed checks (those with fail_count > 0)
+      console.log(`Checks by name`)
+      console.log(JSON.stringify(checksByName, null, 2))
       Object.entries(checksByName)
         .filter(([, metrics]) => metrics.fail_count > 0)
         .forEach(([name, metrics]) => {
