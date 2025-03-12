@@ -80,9 +80,15 @@ export type MetricsSummary = {
   browser_metric_summary: BrowserMetricSummary | null
 }
 
+export type BaselineTestRunDetails = {
+  id: number
+  metrics_summary: MetricsSummary
+}
+
 export type TestRunSummary = {
   metrics_summary: MetricsSummary
   run_status: number
+  baseline_test_run_details: BaselineTestRunDetails | null
 }
 
 /**

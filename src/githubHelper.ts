@@ -210,6 +210,7 @@ export async function generatePRComment(
 
     const markdownSummary = generateMarkdownSummary(
       testRunSummary.metrics_summary,
+      testRunSummary.baseline_test_run_details?.metrics_summary,
       checks
     )
 

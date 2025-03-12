@@ -216,7 +216,7 @@ export async function fetchTestRunSummary(
   testRunId: string
 ): Promise<TestRunSummary | undefined> {
   const baseUrl = getK6CloudBaseUrl()
-  const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary`
+  const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary,baseline_test_run_details`
 
   return apiRequest<TestRunSummary>(url)
 }

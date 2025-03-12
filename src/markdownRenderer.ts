@@ -50,11 +50,13 @@ export function formatFloat(
  * Generates markdown for trend summary data
  * @param trendSummary The trend summary data
  * @param title The title for the trend summary section
+ * @param baselineTrendSummary The baseline trend summary data
  * @returns Markdown string for the trend summary
  */
 export function getTrendSummaryMarkdown(
   trendSummary: TrendSummary | null | undefined,
-  title: string
+  title: string,
+  baselineTrendSummary?: TrendSummary | null
 ): string {
   if (!trendSummary) return ''
 
@@ -62,13 +64,13 @@ export function getTrendSummaryMarkdown(
 
   trendSummaryStrings.push(title)
   trendSummaryStrings.push(
-    `  - ⬇️ Minimum: <b>${formatFloat(trendSummary.min, 'ms')}</b> ⬆️ Maximum: <b>${formatFloat(trendSummary.max, 'ms')}</b>`
+    `  - ⬇️ Minimum: <b>${formatFloat(trendSummary.min, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.min, baselineTrendSummary.min) : ''} ⬆️ Maximum: <b>${formatFloat(trendSummary.max, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.max, baselineTrendSummary.max) : ''}`
   )
   trendSummaryStrings.push(
-    `  - ⏺️ Average: <b>${formatFloat(trendSummary.mean, 'ms')}</b> 🔀 Standard Deviation: <b>${formatFloat(trendSummary.stdev, 'ms')}</b> `
+    `  - ⏺️ Average: <b>${formatFloat(trendSummary.mean, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.mean, baselineTrendSummary.mean) : ''} 🔀 Standard Deviation: <b>${formatFloat(trendSummary.stdev, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.stdev, baselineTrendSummary.stdev) : ''} `
   )
   trendSummaryStrings.push(
-    `  - 🔝 P95: <b>${formatFloat(trendSummary.p95, 'ms')}</b> 🚀 P99: <b>${formatFloat(trendSummary.p99, 'ms')}</b> `
+    `  - 🔝 P95: <b>${formatFloat(trendSummary.p95, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p95, baselineTrendSummary.p95) : ''} 🚀 P99: <b>${formatFloat(trendSummary.p99, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p99, baselineTrendSummary.p99) : ''} `
   )
   return trendSummaryStrings.join('\n')
 }
@@ -79,7 +81,8 @@ export function getTrendSummaryMarkdown(
  * @returns Markdown string for HTTP metrics
  */
 export function getHttpMetricsMarkdown(
-  httpMetrics: HttpMetricSummary | null
+  httpMetrics: HttpMetricSummary | null,
+  baselineHttpMetrics?: HttpMetricSummary | null
 ): string[] {
   if (!httpMetrics || Object.keys(httpMetrics).length === 0) {
     return []
@@ -90,22 +93,22 @@ export function getHttpMetricsMarkdown(
   markdownSections.push(`### 🌐 HTTP Metrics`)
   markdownSections.push('')
   markdownSections.push(
-    `- ⏳ 95th Percentile Response Time: **${formatFloat(httpMetrics.duration?.p95, 'ms')}** ⚡`
+    `- ⏳ 95th Percentile Response Time: **${formatFloat(httpMetrics.duration?.p95, 'ms')}**${baselineHttpMetrics?.duration ? getPercentageChange(httpMetrics.duration?.p95, baselineHttpMetrics.duration?.p95) : ''} ⚡`
   )
   markdownSections.push(
-    `- 🔢  Total Requests: **${formatNumber(httpMetrics.requests_count)}**`
+    `- 🔢  Total Requests: **${formatNumber(httpMetrics.requests_count)}**${baselineHttpMetrics ? getPercentageChange(httpMetrics.requests_count, baselineHttpMetrics.requests_count, true) : ''}`
   )
   markdownSections.push(
-    `- ⚠️ Failed Requests: **${formatNumber(httpMetrics.failures_count)}**`
+    `- ⚠️ Failed Requests: **${formatNumber(httpMetrics.failures_count)}**${baselineHttpMetrics ? getPercentageChange(httpMetrics.failures_count, baselineHttpMetrics.failures_count) : ''}`
   )
   markdownSections.push(
-    `- 🚀 Average Request Rate: **${formatFloat(httpMetrics.rps_mean)}**`
+    `- 🚀 Average Request Rate: **${formatFloat(httpMetrics.rps_mean)}**${baselineHttpMetrics ? getPercentageChange(httpMetrics.rps_mean, baselineHttpMetrics.rps_mean, true) : ''}`
   )
   markdownSections.push(
-    `- 🔝 Peak RPS: **${formatFloat(httpMetrics.rps_max)}**`
+    `- 🔝 Peak RPS: **${formatFloat(httpMetrics.rps_max)}**${baselineHttpMetrics ? getPercentageChange(httpMetrics.rps_max, baselineHttpMetrics.rps_max, true) : ''}`
   )
   markdownSections.push(
-    `- ${getTrendSummaryMarkdown(httpMetrics.duration, '🕒 Request Duration')}`
+    `- ${getTrendSummaryMarkdown(httpMetrics.duration, '🕒 Request Duration', baselineHttpMetrics?.duration)}`
   )
   markdownSections.push('')
 
@@ -118,7 +121,8 @@ export function getHttpMetricsMarkdown(
  * @returns Markdown string for WebSocket metrics
  */
 export function getWebSocketMetricsMarkdown(
-  wsMetrics: WsMetricSummary | null
+  wsMetrics: WsMetricSummary | null,
+  baselineWsMetrics?: WsMetricSummary | null
 ): string[] {
   if (!wsMetrics || Object.keys(wsMetrics).length === 0) {
     return []
@@ -129,19 +133,19 @@ export function getWebSocketMetricsMarkdown(
   markdownSections.push(`### 🔌 WebSocket Metrics`)
   markdownSections.push('')
   markdownSections.push(
-    `- 📤 Messages Sent: **${formatNumber(wsMetrics.msgs_sent)}**`
+    `- 📤 Messages Sent: **${formatNumber(wsMetrics.msgs_sent)}**${baselineWsMetrics ? getPercentageChange(wsMetrics.msgs_sent, baselineWsMetrics.msgs_sent, true) : ''}`
   )
   markdownSections.push(
-    `- 📥 Messages Received: **${formatNumber(wsMetrics.msgs_received)}**`
+    `- 📥 Messages Received: **${formatNumber(wsMetrics.msgs_received)}**${baselineWsMetrics ? getPercentageChange(wsMetrics.msgs_received, baselineWsMetrics.msgs_received, true) : ''}`
   )
   markdownSections.push(
-    `- 👥 Total Sessions: **${formatNumber(wsMetrics.sessions)}**`
+    `- 👥 Total Sessions: **${formatNumber(wsMetrics.sessions)}**${baselineWsMetrics ? getPercentageChange(wsMetrics.sessions, baselineWsMetrics.sessions, true) : ''}`
   )
   markdownSections.push(
-    `- ${getTrendSummaryMarkdown(wsMetrics.session_duration, '⏱️ Session Duration')}`
+    `- ${getTrendSummaryMarkdown(wsMetrics.session_duration, '⏱️ Session Duration', baselineWsMetrics?.session_duration)}`
   )
   markdownSections.push(
-    `- ${getTrendSummaryMarkdown(wsMetrics.connecting, '🔌 Connection Time')}`
+    `- ${getTrendSummaryMarkdown(wsMetrics.connecting, '🔌 Connection Time', baselineWsMetrics?.connecting)}`
   )
   markdownSections.push('')
 
@@ -154,7 +158,8 @@ export function getWebSocketMetricsMarkdown(
  * @returns Markdown string for gRPC metrics
  */
 export function getGrpcMetricsMarkdown(
-  grpcMetrics: GrpcMetricSummary | null
+  grpcMetrics: GrpcMetricSummary | null,
+  baselineGrpcMetrics?: GrpcMetricSummary | null
 ): string[] {
   if (!grpcMetrics || Object.keys(grpcMetrics).length === 0) {
     return []
@@ -165,23 +170,26 @@ export function getGrpcMetricsMarkdown(
   markdownSections.push(`### 📡 gRPC Metrics`)
   markdownSections.push('')
   markdownSections.push(
-    `The 95th percentile response time of the system being tested was **${formatFloat(grpcMetrics.duration?.p95)}** and **${formatNumber(grpcMetrics.requests_count)}** requests were made at an average request rate of **${formatFloat(grpcMetrics.rps_mean)}** requests/second.`
+    `The 95th percentile response time of the system being tested was **${formatFloat(grpcMetrics.duration?.p95)}**${baselineGrpcMetrics?.duration ? getPercentageChange(grpcMetrics.duration?.p95, baselineGrpcMetrics.duration?.p95) : ''} and **${formatNumber(grpcMetrics.requests_count)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.requests_count, baselineGrpcMetrics.requests_count, true) : ''} requests were made at an average request rate of **${formatFloat(grpcMetrics.rps_mean)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_mean, baselineGrpcMetrics.rps_mean, true) : ''} requests/second.`
   )
   markdownSections.push('<details>')
   markdownSections.push('<summary><strong>gRPC Metrics</strong></summary>\n')
   markdownSections.push('| Metric | Value |')
   markdownSections.push('|--------|-------|')
   markdownSections.push(
-    `| Total Requests | ${formatNumber(grpcMetrics.requests_count)} |`
+    `| Total Requests | ${formatNumber(grpcMetrics.requests_count)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.requests_count, baselineGrpcMetrics.requests_count, true) : ''} |`
   )
   markdownSections.push(
-    `| Average RPS | ${formatFloat(grpcMetrics.rps_mean)} |`
+    `| Average RPS | ${formatFloat(grpcMetrics.rps_mean)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_mean, baselineGrpcMetrics.rps_mean, true) : ''} |`
   )
-  markdownSections.push(`| Peak RPS | ${formatFloat(grpcMetrics.rps_max)} |`)
+  markdownSections.push(
+    `| Peak RPS | ${formatFloat(grpcMetrics.rps_max)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_max, baselineGrpcMetrics.rps_max, true) : ''} |`
+  )
 
   const durationMean = grpcMetrics.duration?.mean
+  const baselineDurationMean = baselineGrpcMetrics?.duration?.mean
   markdownSections.push(
-    `| Average Duration | ${formatFloat(durationMean, 'ms')} |`
+    `| Average Duration | ${formatFloat(durationMean, 'ms')}${baselineDurationMean ? getPercentageChange(durationMean, baselineDurationMean) : ''} |`
   )
   markdownSections.push('</details>\n')
 
@@ -194,7 +202,8 @@ export function getGrpcMetricsMarkdown(
  * @returns Markdown string for browser metrics
  */
 export function getBrowserMetricsMarkdown(
-  browserMetrics: BrowserMetricSummary | null
+  browserMetrics: BrowserMetricSummary | null,
+  baselineBrowserMetrics?: BrowserMetricSummary | null
 ): string[] {
   if (!browserMetrics || Object.keys(browserMetrics).length === 0) {
     return []
@@ -209,25 +218,32 @@ export function getBrowserMetricsMarkdown(
   markdownSections.push('| Metric | Value |')
   markdownSections.push('|--------|-------|')
   markdownSections.push(
-    `| Data Received | ${formatNumber(browserMetrics.browser_data_received)} |`
+    `| Data Received | ${formatNumber(browserMetrics.browser_data_received)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_received, baselineBrowserMetrics.browser_data_received, false) : ''} |`
   )
   markdownSections.push(
-    `| Data Sent | ${formatNumber(browserMetrics.browser_data_sent)} |`
+    `| Data Sent | ${formatNumber(browserMetrics.browser_data_sent)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_sent, baselineBrowserMetrics.browser_data_sent, true) : ''} |`
   )
   markdownSections.push(
-    `| HTTP Requests | ${formatNumber(browserMetrics.http_request_count)} |`
+    `| HTTP Requests | ${formatNumber(browserMetrics.http_request_count)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_request_count, baselineBrowserMetrics.http_request_count, true) : ''} |`
   )
   markdownSections.push(
-    `| HTTP Failures | ${formatNumber(browserMetrics.http_failure_count)} |`
+    `| HTTP Failures | ${formatNumber(browserMetrics.http_failure_count)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_failure_count, baselineBrowserMetrics.http_failure_count, false) : ''} |`
   )
 
   // Web Vitals
   const vitals = ['cls', 'fcp', 'fid', 'inp', 'lcp', 'ttfb']
   for (const vital of vitals) {
-    const vitalP75 =
-      browserMetrics[`web_vital_${vital}_p75` as keyof BrowserMetricSummary]
+    const vitalKey = `web_vital_${vital}_p75` as keyof BrowserMetricSummary
+    const vitalP75 = browserMetrics[vitalKey]
+    const baselineVitalP75 = baselineBrowserMetrics
+      ? baselineBrowserMetrics[vitalKey]
+      : undefined
+
+    // For CLS, lower is better, for others it depends on the specific metric
+    const higherIsBetter = vital === 'cls' ? false : false
+
     markdownSections.push(
-      `| ${vital.toUpperCase()} p75 | ${formatFloat(vitalP75 as number | undefined, 'ms')} |`
+      `| ${vital.toUpperCase()} p75 | ${formatFloat(vitalP75 as number | undefined, 'ms')}${baselineVitalP75 ? getPercentageChange(vitalP75 as number | undefined, baselineVitalP75 as number | undefined, higherIsBetter) : ''} |`
     )
   }
   markdownSections.push('</details>\n')
@@ -363,12 +379,42 @@ export function getTestRunStatusMarkdown(
 }
 
 /**
+ * Calculates percentage change between current and baseline values
+ * @param current The current metric value
+ * @param baseline The baseline metric value
+ * @param higherIsBetter Whether a higher value is considered better (defaults to false)
+ * @returns Formatted string with percentage change and direction icon
+ */
+export function getPercentageChange(
+  current?: number,
+  baseline?: number,
+  higherIsBetter: boolean = false
+): string {
+  if (current === undefined || baseline === undefined || baseline === 0) {
+    return ''
+  }
+
+  const percentChange = ((current - baseline) / baseline) * 100
+  const absolutePercentChange = Math.abs(percentChange).toFixed(2)
+
+  // For metrics where lower is better (like response time), a decrease is positive
+  // For metrics where higher is better (like throughput), an increase is positive
+  const isPositive = higherIsBetter ? percentChange > 0 : percentChange < 0
+
+  const icon = isPositive ? '✅' : '❌'
+  const direction = percentChange > 0 ? '↑' : '↓'
+
+  return ` (${icon} ${direction} ${absolutePercentChange}%)`
+}
+
+/**
  * Generates a complete markdown summary from metrics data
  * @param metricsSummary The complete metrics summary object
  * @returns Markdown string for all metrics
  */
 export function generateMarkdownSummary(
   metricsSummary: MetricsSummary | null | undefined,
+  baselineTestRunMetricsSummary: MetricsSummary | null | undefined,
   checks: Check[] | null
 ): string {
   if (!metricsSummary) return 'No metrics data available.'
@@ -387,22 +433,34 @@ export function generateMarkdownSummary(
 
   // Add HTTP metrics
   markdownSections.push(
-    ...getHttpMetricsMarkdown(metricsSummary.http_metric_summary)
+    ...getHttpMetricsMarkdown(
+      metricsSummary.http_metric_summary,
+      baselineTestRunMetricsSummary?.http_metric_summary
+    )
   )
 
   // Add WebSocket metrics
   markdownSections.push(
-    ...getWebSocketMetricsMarkdown(metricsSummary.ws_metric_summary)
+    ...getWebSocketMetricsMarkdown(
+      metricsSummary.ws_metric_summary,
+      baselineTestRunMetricsSummary?.ws_metric_summary
+    )
   )
 
   // Add gRPC metrics
   markdownSections.push(
-    ...getGrpcMetricsMarkdown(metricsSummary.grpc_metric_summary)
+    ...getGrpcMetricsMarkdown(
+      metricsSummary.grpc_metric_summary,
+      baselineTestRunMetricsSummary?.grpc_metric_summary
+    )
   )
 
   // Add browser metrics
   markdownSections.push(
-    ...getBrowserMetricsMarkdown(metricsSummary.browser_metric_summary)
+    ...getBrowserMetricsMarkdown(
+      metricsSummary.browser_metric_summary,
+      baselineTestRunMetricsSummary?.browser_metric_summary
+    )
   )
 
   return markdownSections.length ? markdownSections.join('\n') : ''
