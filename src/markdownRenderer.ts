@@ -397,12 +397,17 @@ export function getPercentageChange(
   const percentChange = ((current - baseline) / baseline) * 100
   const absolutePercentChange = Math.abs(percentChange).toFixed(2)
 
+  let icon, direction
   // For metrics where lower is better (like response time), a decrease is positive
   // For metrics where higher is better (like throughput), an increase is positive
   const isPositive = higherIsBetter ? percentChange > 0 : percentChange < 0
-
-  const icon = isPositive ? '✅' : '❌'
-  const direction = percentChange > 0 ? '↑' : '↓'
+  if (current === baseline) {
+    icon = '🔘'
+    direction = ''
+  } else {
+    icon = isPositive ? '✅' : '❌'
+    direction = percentChange > 0 ? '↑' : '↓'
+  }
 
   return ` (${icon} ${direction} ${absolutePercentChange}%)`
 }
