@@ -1,6 +1,6 @@
 // Common helper functions used in the action
 import * as core from '@actions/core'
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, execSync, spawn } from 'child_process'
 import path from 'path'
 import { apiRequest } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
@@ -242,4 +242,35 @@ export async function fetchChecks(testRunId: string): Promise<Check[]> {
 
   // Return the checks array from the response
   return response.value
+}
+
+/**
+ * Extracts the semantic version (e.g., "0.56.0") from the full k6 version string which looks like
+ * `k6 v0.56.0 (go1.23.4, darwin/arm64)`.
+ *
+ * @param {string} versionString - The full version string from k6 version command
+ * @returns {string} The semantic version or empty string if not found
+ */
+export function extractK6SemVer(versionString: string): string {
+  // Match pattern like "v0.56.0" and extract just the digits and dots
+  const match = versionString.match(/v(\d+\.\d+\.\d+)/)
+  return match ? match[1] : ''
+}
+
+/**
+ * Gets the installed k6 version using the `k6 version` command.
+ *
+ * @returns The installed k6 version as a semantic version string
+ */
+export function getInstalledK6Version(): string {
+  try {
+    // Use execSync for synchronous output capture
+    const output = execSync('k6 version').toString().trim()
+
+    // Return only the semantic version if requested
+    return extractK6SemVer(output)
+  } catch (error) {
+    console.error('Error executing k6 version:', error)
+    return ''
+  }
 }
