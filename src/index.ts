@@ -78,7 +78,7 @@ export async function run(): Promise<void> {
         isUsingFlags: flags.length > 0,
         isUsingInspectFlags: inspectFlags.length > 0,
         failFast,
-        commentOnPr: shouldCommentCloudTestRunUrlOnPR,
+        commentOnPr: shouldCommentOnPR,
         parallelFlag: parallel,
         cloudRunLocally,
         onlyVerifyScripts,
