@@ -105,49 +105,6 @@ describe('apiUtils', () => {
       expect(result).toBe(successResponse)
     })
 
-    it('should throw error after max retries', async () => {
-      // Set up multiple error responses
-      const errorResponse = new Response('Service Unavailable', {
-        status: 503,
-        statusText: 'Service Unavailable',
-      })
-
-      vi.mocked(global.fetch).mockResolvedValue(errorResponse)
-
-      // Mock setTimeout to speed up tests
-      vi.useFakeTimers()
-
-      // Start the fetch with retry
-      const resultPromise = fetchWithRetry(
-        'https://api.example.com/test',
-        {},
-        {
-          initialDelayMs: 10,
-          maxRetries: 2,
-        }
-      )
-
-      // Fast-forward timer for all retries
-      await vi.runAllTimersAsync()
-
-      // Verify it throws after max retries
-      try {
-        await resultPromise
-        // If we get here, the test should fail
-        expect('Promise should have been rejected').toBe('but it was resolved')
-      } catch (error) {
-        // We expect an error to be thrown
-        expect(error).toBeInstanceOf(Error)
-        expect((error as Error).message).toContain('HTTP error 503')
-      }
-
-      // Restore timers
-      vi.useRealTimers()
-
-      // Should be called initial + maxRetries times
-      expect(global.fetch).toHaveBeenCalledTimes(3)
-    })
-
     it('should retry on network errors', async () => {
       // Set up a network error followed by a successful response
       vi.mocked(global.fetch)

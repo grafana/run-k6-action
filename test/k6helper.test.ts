@@ -6,11 +6,11 @@ import {
   executeRunK6Command,
   extractTestRunId,
   fetchChecks,
+  fetchTestRunSummary,
   generateK6RunCommand,
   isCloudIntegrationEnabled,
   validateTestPaths,
 } from '../src/k6helper'
-import { generateMarkdownSummary } from '../src/markdownRenderer'
 import { TestRunUrlsMap } from '../src/types'
 
 // Mock child_process.spawn
@@ -29,6 +29,7 @@ vi.mock('child_process', () => ({
     stderr: { on: vi.fn() },
     pid: 123,
   })),
+  execSync: vi.fn().mockReturnValue(Buffer.from('k6 v0.38.0')),
 }))
 
 // Mock @actions/core
@@ -248,50 +249,52 @@ describe('extractTestRunId', () => {
   })
 })
 
-describe('generateMarkdownSummary', () => {
-  it('should return a default message for null metrics', () => {
-    expect(generateMarkdownSummary(null, null)).toBe(
-      'No metrics data available.'
-    )
+describe('fetchTestRunSummary', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
   })
 
-  it('should return a default message for undefined metrics', () => {
-    expect(generateMarkdownSummary(undefined, null)).toBe(
-      'No metrics data available.'
-    )
-  })
-
-  it('should return a default message for empty metrics', () => {
-    const emptyMetrics = {
-      http_metric_summary: null,
-      ws_metric_summary: null,
-      grpc_metric_summary: null,
-      checks_metric_summary: null,
-      thresholds_summary: null,
-      browser_metric_summary: null,
-    }
-
-    expect(generateMarkdownSummary(emptyMetrics, null)).toBe(
-      'No metrics data available.'
-    )
-  })
-
-  it('should display checks summary when present', () => {
-    const metrics = {
-      http_metric_summary: null,
-      ws_metric_summary: null,
-      grpc_metric_summary: null,
-      checks_metric_summary: {
-        total: 10,
-        successes: 8,
+  it('should return test run summary when API request succeeds', async () => {
+    // Mock response from the API
+    const mockTestRunSummary = {
+      metrics_summary: {
+        http_metric_summary: {
+          requests: 100,
+          failed_requests: 5,
+        },
+        checks_metric_summary: {
+          total: 200,
+          successes: 190,
+        },
       },
-      thresholds_summary: null,
-      browser_metric_summary: null,
+      baseline_test_run_details: null,
     }
 
-    const result = generateMarkdownSummary(metrics, null)
+    // Mock the apiRequest function to return our mock response
+    vi.mocked(apiRequest).mockResolvedValueOnce(mockTestRunSummary)
 
-    expect(result).toContain('checks were not successful')
+    // Call the function
+    const result = await fetchTestRunSummary('1234')
+
+    // Verify the result
+    expect(result).toEqual(mockTestRunSummary)
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/result_summary')
+    )
+  })
+
+  it('should return undefined when API request fails', async () => {
+    // Mock the apiRequest function to return undefined (API failure)
+    vi.mocked(apiRequest).mockResolvedValueOnce(undefined)
+
+    // Call the function
+    const result = await fetchTestRunSummary('1234')
+
+    // Verify the result
+    expect(result).toBeUndefined()
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/test_runs(1234)/result_summary')
+    )
   })
 })
 
