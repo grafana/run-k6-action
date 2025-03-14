@@ -64,13 +64,22 @@ export function getTrendSummaryMarkdown(
 
   trendSummaryStrings.push(title)
   trendSummaryStrings.push(
-    `  - ⬇️ Minimum: <b>${formatFloat(trendSummary.min, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.min, baselineTrendSummary.min) : ''} ⬆️ Maximum: <b>${formatFloat(trendSummary.max, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.max, baselineTrendSummary.max) : ''}`
+    `  - ⬇️ Minimum: <b>${formatFloat(trendSummary.min, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.min, baselineTrendSummary.min) : ''}`
   )
   trendSummaryStrings.push(
-    `  - ⏺️ Average: <b>${formatFloat(trendSummary.mean, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.mean, baselineTrendSummary.mean) : ''} 🔀 Standard Deviation: <b>${formatFloat(trendSummary.stdev, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.stdev, baselineTrendSummary.stdev) : ''} `
+    `  - ⬆️ Maximum: <b>${formatFloat(trendSummary.max, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.max, baselineTrendSummary.max) : ''}`
   )
   trendSummaryStrings.push(
-    `  - 🔝 P95: <b>${formatFloat(trendSummary.p95, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p95, baselineTrendSummary.p95) : ''} 🚀 P99: <b>${formatFloat(trendSummary.p99, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p99, baselineTrendSummary.p99) : ''} `
+    `  - ⏺️ Average: <b>${formatFloat(trendSummary.mean, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.mean, baselineTrendSummary.mean) : ''}`
+  )
+  trendSummaryStrings.push(
+    `  - 🔀 Standard Deviation: <b>${formatFloat(trendSummary.stdev, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.stdev, baselineTrendSummary.stdev) : ''} `
+  )
+  trendSummaryStrings.push(
+    `  - 🔝 P95: <b>${formatFloat(trendSummary.p95, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p95, baselineTrendSummary.p95) : ''}`
+  )
+  trendSummaryStrings.push(
+    `  - 🚀 P99: <b>${formatFloat(trendSummary.p99, 'ms')}</b>${baselineTrendSummary ? getPercentageChange(trendSummary.p99, baselineTrendSummary.p99) : ''}`
   )
   return trendSummaryStrings.join('\n')
 }
@@ -90,7 +99,9 @@ export function getHttpMetricsMarkdown(
 
   const markdownSections = []
 
-  markdownSections.push(`### 🌐 HTTP Metrics`)
+  markdownSections.push(
+    `<details> <summary> <h3> 🌐 HTTP Metrics </h3> </summary>`
+  )
   markdownSections.push('')
   markdownSections.push(
     `- ⏳ 95th Percentile Response Time: **${formatFloat(httpMetrics.duration?.p95, 'ms')}**${baselineHttpMetrics?.duration ? getPercentageChange(httpMetrics.duration?.p95, baselineHttpMetrics.duration?.p95) : ''} ⚡`
@@ -111,7 +122,8 @@ export function getHttpMetricsMarkdown(
     `- ${getTrendSummaryMarkdown(httpMetrics.duration, '🕒 Request Duration', baselineHttpMetrics?.duration)}`
   )
   markdownSections.push('')
-
+  markdownSections.push('</details>')
+  markdownSections.push('')
   return markdownSections
 }
 
@@ -130,7 +142,9 @@ export function getWebSocketMetricsMarkdown(
 
   const markdownSections = []
 
-  markdownSections.push(`### 🔌 WebSocket Metrics`)
+  markdownSections.push(
+    `<details> <summary> <h3> 🔌 WebSocket Metrics </h3> </summary>`
+  )
   markdownSections.push('')
   markdownSections.push(
     `- 📤 Messages Sent: **${formatNumber(wsMetrics.msgs_sent)}**${baselineWsMetrics ? getPercentageChange(wsMetrics.msgs_sent, baselineWsMetrics.msgs_sent, true) : ''}`
@@ -148,7 +162,8 @@ export function getWebSocketMetricsMarkdown(
     `- ${getTrendSummaryMarkdown(wsMetrics.connecting, '🔌 Connection Time', baselineWsMetrics?.connecting)}`
   )
   markdownSections.push('')
-
+  markdownSections.push('</details>')
+  markdownSections.push('')
   return markdownSections
 }
 
@@ -167,31 +182,25 @@ export function getGrpcMetricsMarkdown(
 
   const markdownSections = []
 
-  markdownSections.push(`### 📡 gRPC Metrics`)
+  markdownSections.push(
+    `<details> <summary> <h3> 📡 gRPC Metrics </h3> </summary>`
+  )
   markdownSections.push('')
   markdownSections.push(
-    `The 95th percentile response time of the system being tested was **${formatFloat(grpcMetrics.duration?.p95)}**${baselineGrpcMetrics?.duration ? getPercentageChange(grpcMetrics.duration?.p95, baselineGrpcMetrics.duration?.p95) : ''} and **${formatNumber(grpcMetrics.requests_count)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.requests_count, baselineGrpcMetrics.requests_count, true) : ''} requests were made at an average request rate of **${formatFloat(grpcMetrics.rps_mean)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_mean, baselineGrpcMetrics.rps_mean, true) : ''} requests/second.`
-  )
-  markdownSections.push('<details>')
-  markdownSections.push('<summary><strong>gRPC Metrics</strong></summary>\n')
-  markdownSections.push('| Metric | Value |')
-  markdownSections.push('|--------|-------|')
-  markdownSections.push(
-    `| Total Requests | ${formatNumber(grpcMetrics.requests_count)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.requests_count, baselineGrpcMetrics.requests_count, true) : ''} |`
+    `- 🔢 Total Requests: **${formatNumber(grpcMetrics.requests_count)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.requests_count, baselineGrpcMetrics.requests_count, true) : ''}`
   )
   markdownSections.push(
-    `| Average RPS | ${formatFloat(grpcMetrics.rps_mean)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_mean, baselineGrpcMetrics.rps_mean, true) : ''} |`
+    `- 🚀 Average Request Rate: **${formatFloat(grpcMetrics.rps_mean)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_mean, baselineGrpcMetrics.rps_mean, true) : ''} requests/second`
   )
   markdownSections.push(
-    `| Peak RPS | ${formatFloat(grpcMetrics.rps_max)}${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_max, baselineGrpcMetrics.rps_max, true) : ''} |`
+    `- 🔝 Peak RPS: **${formatFloat(grpcMetrics.rps_max)}**${baselineGrpcMetrics ? getPercentageChange(grpcMetrics.rps_max, baselineGrpcMetrics.rps_max, true) : ''} requests/second`
   )
-
-  const durationMean = grpcMetrics.duration?.mean
-  const baselineDurationMean = baselineGrpcMetrics?.duration?.mean
   markdownSections.push(
-    `| Average Duration | ${formatFloat(durationMean, 'ms')}${baselineDurationMean ? getPercentageChange(durationMean, baselineDurationMean) : ''} |`
+    `- ${getTrendSummaryMarkdown(grpcMetrics.duration, '🕒 Request Duration', baselineGrpcMetrics?.duration)}`
   )
-  markdownSections.push('</details>\n')
+  markdownSections.push('')
+  markdownSections.push('</details>')
+  markdownSections.push('')
 
   return markdownSections
 }
@@ -211,26 +220,40 @@ export function getBrowserMetricsMarkdown(
 
   const markdownSections = []
 
-  markdownSections.push(`### 🖥️ Browser Metrics`)
+  markdownSections.push(
+    `<details> <summary> <h3> 🖥️ Browser Metrics </h3> </summary>`
+  )
   markdownSections.push('')
-  markdownSections.push('<details>')
-  markdownSections.push('<summary><strong>Browser Metrics</strong></summary>\n')
-  markdownSections.push('| Metric | Value |')
-  markdownSections.push('|--------|-------|')
+
+  // Main browser metrics
   markdownSections.push(
-    `| Data Received | ${formatNumber(browserMetrics.browser_data_received)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_received, baselineBrowserMetrics.browser_data_received, false) : ''} |`
+    `- 📥 Data Received: **${formatNumber(browserMetrics.browser_data_received)} bytes**${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_received, baselineBrowserMetrics.browser_data_received, false) : ''}`
   )
   markdownSections.push(
-    `| Data Sent | ${formatNumber(browserMetrics.browser_data_sent)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_sent, baselineBrowserMetrics.browser_data_sent, true) : ''} |`
+    `- 📤 Data Sent: **${formatNumber(browserMetrics.browser_data_sent)} bytes**${baselineBrowserMetrics ? getPercentageChange(browserMetrics.browser_data_sent, baselineBrowserMetrics.browser_data_sent, true) : ''}`
   )
   markdownSections.push(
-    `| HTTP Requests | ${formatNumber(browserMetrics.http_request_count)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_request_count, baselineBrowserMetrics.http_request_count, true) : ''} |`
+    `- 🔢 HTTP Requests: **${formatNumber(browserMetrics.http_request_count)}**${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_request_count, baselineBrowserMetrics.http_request_count, true) : ''}`
   )
   markdownSections.push(
-    `| HTTP Failures | ${formatNumber(browserMetrics.http_failure_count)}${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_failure_count, baselineBrowserMetrics.http_failure_count, false) : ''} |`
+    `- ⚠️ HTTP Failures: **${formatNumber(browserMetrics.http_failure_count)}**${baselineBrowserMetrics ? getPercentageChange(browserMetrics.http_failure_count, baselineBrowserMetrics.http_failure_count, false) : ''}`
   )
 
-  // Web Vitals
+  // Web Vitals section with emojis for each vital
+  markdownSections.push('')
+  markdownSections.push('- 📊 **Web Vitals (p75):**')
+
+  // Define emoji mapping for web vitals
+  const vitalEmojis: Record<string, string> = {
+    cls: '🧩', // Cumulative Layout Shift
+    fcp: '🎨', // First Contentful Paint
+    fid: '👆', // First Input Delay
+    inp: '⌨️', // Interaction to Next Paint
+    lcp: '🖼️', // Largest Contentful Paint
+    ttfb: '⏱️', // Time to First Byte
+  }
+
+  // Add each web vital as a nested bullet point
   const vitals = ['cls', 'fcp', 'fid', 'inp', 'lcp', 'ttfb']
   for (const vital of vitals) {
     const vitalKey = `web_vital_${vital}_p75` as keyof BrowserMetricSummary
@@ -239,14 +262,19 @@ export function getBrowserMetricsMarkdown(
       ? baselineBrowserMetrics[vitalKey]
       : undefined
 
-    // For CLS, lower is better, for others it depends on the specific metric
-    const higherIsBetter = vital === 'cls' ? false : false
+    // For all web vitals, lower is better (except CLS which is already set to false)
+    const higherIsBetter = false
+    const emoji = vitalEmojis[vital] || '📏'
+    const vitalName = vital.toUpperCase()
 
     markdownSections.push(
-      `| ${vital.toUpperCase()} p75 | ${formatFloat(vitalP75 as number | undefined, 'ms')}${baselineVitalP75 ? getPercentageChange(vitalP75 as number | undefined, baselineVitalP75 as number | undefined, higherIsBetter) : ''} |`
+      `  - ${emoji} **${vitalName}**: **${formatFloat(vitalP75 as number | undefined, 'ms')}**${baselineVitalP75 ? getPercentageChange(vitalP75 as number | undefined, baselineVitalP75 as number | undefined, higherIsBetter) : ''}`
     )
   }
-  markdownSections.push('</details>\n')
+
+  markdownSections.push('')
+  markdownSections.push('</details>')
+  markdownSections.push('')
 
   return markdownSections
 }
