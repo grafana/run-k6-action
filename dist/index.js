@@ -35512,7 +35512,7 @@ async function run() {
         const inspectFlags = core.getInput('inspect-flags');
         const cloudRunLocally = core.getBooleanInput('cloud-run-locally');
         const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts');
-        const shouldCommentCloudTestRunUrlOnPR = core.getBooleanInput('cloud-comment-on-pr');
+        const shouldCommentOnPR = core.getBooleanInput('cloud-comment-on-pr');
         const debug = core.getBooleanInput('debug');
         const allPromises = [];
         core.debug(`Flag to show k6 progress output set to: ${debug}`);
@@ -35625,7 +35625,7 @@ async function run() {
             }
         }
         await Promise.all(allPromises);
-        if (shouldCommentCloudTestRunUrlOnPR) {
+        if (isCloud && shouldCommentOnPR) {
             // Generate PR comment with test run URLs
             await (0, githubHelper_1.generatePRComment)(TEST_RESULT_URLS_MAP);
         }
