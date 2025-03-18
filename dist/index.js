@@ -35108,6 +35108,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getUsageStatsId = getUsageStatsId;
 exports.sendAnalytics = sendAnalytics;
 const crypto_1 = __importDefault(__nccwpck_require__(6982));
 const os_1 = __importDefault(__nccwpck_require__(857));
@@ -35124,10 +35125,15 @@ const ANALYTICS_SOURCE = 'github-action';
 function getUsageStatsId() {
     const githubAction = process.env.GITHUB_ACTION || '';
     const githubWorkflow = process.env.GITHUB_WORKFLOW || '';
-    return crypto_1.default
-        .createHash('sha256')
-        .update(`${githubAction}-${githubWorkflow}`)
-        .digest('hex');
+    let idString = '';
+    // Generate a random UUID if both environment variables are empty
+    if (!githubAction && !githubWorkflow) {
+        idString = crypto_1.default.randomUUID();
+    }
+    else {
+        idString = `${githubAction}-${githubWorkflow}`;
+    }
+    return crypto_1.default.createHash('sha256').update(idString).digest('hex');
 }
 async function sendAnalytics(userSpecifiedAnalyticsData) {
     const analyticsData = {
@@ -35150,7 +35156,7 @@ async function sendAnalytics(userSpecifiedAnalyticsData) {
         });
     }
     catch (error) {
-        console.error('Error sending analytics:', error);
+        console.warn('Error sending analytics:', error);
     }
 }
 

@@ -38,6 +38,7 @@ describe('analytics', () => {
     vi.resetAllMocks()
     process.env = { ...originalEnv }
     console.error = vi.fn()
+    console.warn = vi.fn()
 
     // Set up environment variables
     process.env.GITHUB_ACTION = 'test-action'
@@ -115,33 +116,26 @@ describe('analytics', () => {
       await sendAnalytics(mockUserSpecifiedData)
 
       // Verify that the error was handled and logged
-      expect(console.error).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Error sending analytics:',
         expect.any(Error)
       )
     })
+  })
 
+  describe('getUsageStatsId', () => {
     it('should generate a unique usage stats ID when GitHub variables are missing', async () => {
       // Remove GitHub environment variables
       delete process.env.GITHUB_ACTION
       delete process.env.GITHUB_WORKFLOW
 
       // We need to use a dynamic import to avoid hoisting issues
-      const { sendAnalytics } = await import('../src/analytics')
+      const { getUsageStatsId } = await import('../src/analytics')
 
-      await sendAnalytics(mockUserSpecifiedData)
+      const usageStatsId1 = await getUsageStatsId()
+      const usageStatsId2 = await getUsageStatsId()
 
-      // Just verify that the API request was made successfully
-      expect(apiUtils.apiRequest).toHaveBeenCalledTimes(1)
-      // The body should contain a usageStatsId even though GitHub variables are missing
-      expect(apiUtils.apiRequest).toHaveBeenCalledWith(
-        expect.any(String),
-        {
-          method: 'POST',
-          body: expect.stringContaining('"usageStatsId"'),
-        },
-        expect.any(Object)
-      )
+      expect(usageStatsId1).not.toEqual(usageStatsId2)
     })
   })
 })

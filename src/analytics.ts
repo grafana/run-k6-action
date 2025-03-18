@@ -43,13 +43,18 @@ interface AnalyticsData {
  *
  * @returns The usage stats id
  */
-function getUsageStatsId(): string {
+export function getUsageStatsId(): string {
   const githubAction = process.env.GITHUB_ACTION || ''
   const githubWorkflow = process.env.GITHUB_WORKFLOW || ''
-  return crypto
-    .createHash('sha256')
-    .update(`${githubAction}-${githubWorkflow}`)
-    .digest('hex')
+
+  let idString = ''
+  // Generate a random UUID if both environment variables are empty
+  if (!githubAction && !githubWorkflow) {
+    idString = crypto.randomUUID()
+  } else {
+    idString = `${githubAction}-${githubWorkflow}`
+  }
+  return crypto.createHash('sha256').update(idString).digest('hex')
 }
 
 export async function sendAnalytics(
@@ -80,6 +85,6 @@ export async function sendAnalytics(
       }
     )
   } catch (error) {
-    console.error('Error sending analytics:', error)
+    console.warn('Error sending analytics:', error)
   }
 }
