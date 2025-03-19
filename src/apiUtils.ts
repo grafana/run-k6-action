@@ -61,25 +61,16 @@ export async function fetchWithRetry(
       lastError = new Error(
         `HTTP error ${response.status}: ${response.statusText}`
       )
-
+    } catch (error) {
+      // Network errors, timeouts, etc.
+      lastError = error instanceof Error ? error : new Error(String(error))
+    } finally {
       // Log the retry attempt
       if (attemptCount < retry.maxRetries) {
         const retryDelayMs =
           retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount)
         core.info(
-          `Request to ${url} failed with status ${response.status}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`
-        )
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
-      }
-    } catch (error) {
-      // Network errors, timeouts, etc.
-      lastError = error instanceof Error ? error : new Error(String(error))
-
-      if (attemptCount < retry.maxRetries) {
-        const retryDelayMs =
-          retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount)
-        core.info(
-          `Request to ${url} failed: ${lastError.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`
+          `Request to ${url} failed: ${lastError?.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`
         )
         await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
       }
@@ -137,7 +128,7 @@ export async function apiRequest<T>(
     // Parse and return the JSON response
     return (await response.json()) as T
   } catch (error) {
-    core.info(
+    core.error(
       `Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`
     )
     return undefined

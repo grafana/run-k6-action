@@ -195,7 +195,11 @@ export async function generatePRComment(
       continue
     }
 
-    const testRunSummary = await fetchTestRunSummary(testRunId)
+    // Run both API calls in parallel
+    const [testRunSummary, checks] = await Promise.all([
+      fetchTestRunSummary(testRunId),
+      fetchChecks(testRunId),
+    ])
 
     if (!testRunSummary) {
       core.info(`Unable to fetch test run summary for test run ${testRunId}`)
@@ -205,8 +209,6 @@ export async function generatePRComment(
     resultSummaryStrings.push(
       getTestRunStatusMarkdown(testRunSummary.run_status)
     )
-
-    const checks = await fetchChecks(testRunId)
 
     const markdownSummary = generateMarkdownSummary(
       testRunSummary.metrics_summary,

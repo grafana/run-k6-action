@@ -35178,19 +35178,16 @@ async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             }
             // If we get here, we have an error status code that should be retried
             lastError = new Error(`HTTP error ${response.status}: ${response.statusText}`);
-            // Log the retry attempt
-            if (attemptCount < retry.maxRetries) {
-                const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
-                core.info(`Request to ${url} failed with status ${response.status}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
-                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-            }
         }
         catch (error) {
             // Network errors, timeouts, etc.
             lastError = error instanceof Error ? error : new Error(String(error));
+        }
+        finally {
+            // Log the retry attempt
             if (attemptCount < retry.maxRetries) {
                 const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
-                core.info(`Request to ${url} failed: ${lastError.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
+                core.info(`Request to ${url} failed: ${lastError?.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
                 await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
             }
         }
@@ -35235,7 +35232,7 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
         return (await response.json());
     }
     catch (error) {
-        core.info(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
+        core.error(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
         return undefined;
     }
 }
@@ -35414,13 +35411,16 @@ async function generatePRComment(testRunUrlsMap) {
             core.info(`Skipping test run URL ${testRunUrl} (Script Path: ${scriptPath}) as it does not contain a valid test run id`);
             continue;
         }
-        const testRunSummary = await (0, k6helper_1.fetchTestRunSummary)(testRunId);
+        // Run both API calls in parallel
+        const [testRunSummary, checks] = await Promise.all([
+            (0, k6helper_1.fetchTestRunSummary)(testRunId),
+            (0, k6helper_1.fetchChecks)(testRunId),
+        ]);
         if (!testRunSummary) {
             core.info(`Unable to fetch test run summary for test run ${testRunId}`);
             continue;
         }
         resultSummaryStrings.push((0, markdownRenderer_1.getTestRunStatusMarkdown)(testRunSummary.run_status));
-        const checks = await (0, k6helper_1.fetchChecks)(testRunId);
         const markdownSummary = (0, markdownRenderer_1.generateMarkdownSummary)(testRunSummary.metrics_summary, testRunSummary.baseline_test_run_details?.metrics_summary, checks);
         resultSummaryStrings.push(markdownSummary);
         resultSummaryStrings.push('\n');
