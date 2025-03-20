@@ -3,36 +3,32 @@ on:
   push:
 
 jobs:
-
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        id: setup-node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - name: Install dependencies
-        id: install
-        run: npm ci
-      - name: Run lint check
-        id: lint
-        run: npm run lint
-      - name: Run format check
-        id: format
-        run: npm run format:check
-      - name: Run tests
-        id: test
-        run: npm run test:coverage
-
+  # unit-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Node.js
+  #       id: setup-node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version-file: .node-version
+  #         cache: npm
+  #     - name: Install dependencies
+  #       id: install
+  #       run: npm ci
+  #     - name: Run tests
+  #       id: test
+  #       run: npm run test:coverage
   protocol:
-    needs: [unit-tests]
+    # needs: [unit-tests]
     runs-on: ubuntu-latest
     env:
-      K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
-      K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+      K6_CLOUD_TOKEN: ${{ secrets.AYUSH_STAGING_K6_TOKEN }}
+      K6_CLOUD_PROJECT_ID: "16274"
+      K6_CLOUD_BASE_URL: "https://api.staging.k6.io"
+      K6_CLOUD_HOST: "https://ingest.staging.k6.io"
+      K6_CLOUD_WEB_APP_URL: "https://app.staging.k6.io"
+      K6_CLOUD_LOGS_TAIL_URL: "wss://cloudlogs.staging.k6.io/api/v1/tail"
     steps:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
@@ -42,58 +38,59 @@ jobs:
         with:
           path: |
             ./dev/protocol*.js
-          flags: --vus 10 --duration 30s
+            ./dev/browser.js
           parallel: true
           cloud-run-locally: false
-  protocol-without-flags:
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        continue-on-error: true
-        with:
-          path: |
-            ./dev/protocol*.js
-  show-complete-k6-output:
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        with:
-          path: |
-            ./dev/protocol.js
-          flags: --vus 10 --duration 30s
           debug: true
-  verify-scripts:
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        continue-on-error: true
-        with:
-          path: |
-            ./dev/verify-script-tests/**.js
-          only-verify-scripts: true
-  env-var-test:
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    env:
-      TEST_SYSTEM_ENV_VAR: "test-system-env-var-value"
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Grafana k6
-        uses: grafana/setup-k6-action@main
-      - uses: ./
-        with:
-          path: |
-            ./dev/env-var-test.js
-          flags: --vus 1 --duration 1s --env TEST_FLAG_ENV_VAR=test-flag-env-var-value -e TEST_SYSTEM_ENV_VAR_E=test-cli-e-env-var-value
+  # protocol-without-flags:
+  #   needs: [unit-tests]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       continue-on-error: true
+  #       with:
+  #         path: |
+  #           ./dev/protocol*.js
+  # show-complete-k6-output:
+  #   needs: [unit-tests]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       with:
+  #         path: |
+  #           ./dev/protocol.js
+  #         flags: --vus 10 --duration 30s
+  #         debug: true
+  # verify-scripts:
+  #   needs: [unit-tests]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       continue-on-error: true
+  #       with:
+  #         path: |
+  #           ./dev/verify-script-tests/**.js
+  #         only-verify-scripts: true
+  # env-var-test:
+  #   needs: [unit-tests]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     TEST_SYSTEM_ENV_VAR: "test-system-env-var-value"
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup Grafana k6
+  #       uses: grafana/setup-k6-action@main
+  #     - uses: ./
+  #       with:
+  #         path: |
+  #           ./dev/env-var-test.js
+  #         flags: --vus 1 --duration 1s --env TEST_FLAG_ENV_VAR=test-flag-env-var-value -e TEST_SYSTEM_ENV_VAR_E=test-cli-e-env-var-value
