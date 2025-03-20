@@ -38,6 +38,7 @@ export async function run(): Promise<void> {
     const allPromises: Promise<void>[] = []
 
     core.debug(`Flag to show k6 progress output set to: ${debug}`)
+    console.log(`Flags: ${flags}`)
 
     core.debug(`🔍 Found following ${testPaths.length} test run files:`)
     testPaths.forEach((testPath, index) => {
