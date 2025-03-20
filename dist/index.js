@@ -35290,8 +35290,13 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
             core.info(`Response: ${errorText}`);
             return undefined;
         }
-        // Parse and return the JSON response
-        return (await response.json());
+        const responseText = await response.text();
+        try {
+            return JSON.parse(responseText);
+        }
+        catch {
+            return responseText;
+        }
     }
     catch (error) {
         core.error(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
