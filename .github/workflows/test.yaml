@@ -29,6 +29,7 @@ jobs:
       K6_CLOUD_HOST: "https://ingest.staging.k6.io"
       K6_CLOUD_WEB_APP_URL: "https://app.staging.k6.io"
       K6_CLOUD_LOGS_TAIL_URL: "wss://cloudlogs.staging.k6.io/api/v1/tail"
+      GRAFANA_ANALYTICS_URL: "https://usage-stats-dev-us-central-0.grafana.net"
     steps:
       - uses: actions/checkout@v4
       - name: Setup Grafana k6
