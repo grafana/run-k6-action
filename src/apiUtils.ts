@@ -128,7 +128,7 @@ export async function apiRequest<T>(
     try {
       return (await response.json()) as T
     } catch {
-      return response.text() as T
+      return (await response.text()) as T
     }
   } catch (error) {
     core.error(

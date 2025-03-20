@@ -35295,7 +35295,7 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
             return (await response.json());
         }
         catch {
-            return response.text();
+            return (await response.text());
         }
     }
     catch (error) {
