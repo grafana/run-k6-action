@@ -35147,7 +35147,7 @@ async function sendAnalytics(userSpecifiedAnalyticsData) {
     };
     const url = process.env.GRAFANA_ANALYTICS_URL || 'https://stats.grafana.org';
     try {
-        await (0, apiUtils_1.apiRequest)(url, {
+        await (0, apiUtils_1.apiRequest)(`${url}/runk6action-usage-report`, {
             method: 'POST',
             body: JSON.stringify(analyticsData),
         }, {

@@ -74,7 +74,7 @@ export async function sendAnalytics(
 
   try {
     await apiRequest(
-      url,
+      `${url}/runk6action-usage-report`,
       {
         method: 'POST',
         body: JSON.stringify(analyticsData),
