@@ -125,7 +125,11 @@ export async function apiRequest<T>(
     }
 
     // Parse and return the JSON response
-    return (await response.json()) as T
+    try {
+      return (await response.json()) as T
+    } catch {
+      return response.text() as T
+    }
   } catch (error) {
     core.error(
       `Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`

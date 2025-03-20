@@ -35291,7 +35291,12 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
             return undefined;
         }
         // Parse and return the JSON response
-        return (await response.json());
+        try {
+            return (await response.json());
+        }
+        catch {
+            return response.text();
+        }
     }
     catch (error) {
         core.error(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
