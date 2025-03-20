@@ -87,7 +87,7 @@ export type BaselineTestRunDetails = {
 
 export type TestRunSummary = {
   metrics_summary: MetricsSummary
-  run_status: number
+  result_status: string
   baseline_test_run_details: BaselineTestRunDetails | null
 }
 

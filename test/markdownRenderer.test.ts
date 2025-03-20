@@ -434,25 +434,21 @@ describe('Markdown generation functions', () => {
   })
 
   describe('getTestRunStatusMarkdown', () => {
-    it('should show unknown status for undefined or null', () => {
-      expect(getTestRunStatusMarkdown(undefined)).toContain('Unknown')
-      expect(getTestRunStatusMarkdown(null as unknown as number)).toContain(
-        'Unknown'
-      )
+    it('should show unknown status for undefined or empty string', () => {
+      expect(getTestRunStatusMarkdown(undefined)).toContain('Error')
+      expect(getTestRunStatusMarkdown('')).toContain('Error')
     })
 
-    it('should show passed status for code 3', () => {
-      expect(getTestRunStatusMarkdown(3)).toContain('Passed')
+    it('should show passed status correctly', () => {
+      expect(getTestRunStatusMarkdown('Passed')).toContain('Passed')
     })
 
-    it('should show timed out status for code 4', () => {
-      expect(getTestRunStatusMarkdown(4)).toContain('Timed out')
+    it('should show failed status correctly', () => {
+      expect(getTestRunStatusMarkdown('Failed')).toContain('Failed')
     })
 
-    it('should show failed status for other codes', () => {
-      expect(getTestRunStatusMarkdown(1)).toContain('Failed')
-      expect(getTestRunStatusMarkdown(2)).toContain('Failed')
-      expect(getTestRunStatusMarkdown(5)).toContain('Failed')
+    it('should show error status for unknown status', () => {
+      expect(getTestRunStatusMarkdown('Unknown')).toContain('Error')
     })
   })
 })

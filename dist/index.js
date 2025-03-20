@@ -35420,7 +35420,7 @@ async function generatePRComment(testRunUrlsMap) {
             core.info(`Unable to fetch test run summary for test run ${testRunId}`);
             continue;
         }
-        resultSummaryStrings.push((0, markdownRenderer_1.getTestRunStatusMarkdown)(testRunSummary.run_status));
+        resultSummaryStrings.push((0, markdownRenderer_1.getTestRunStatusMarkdown)(testRunSummary.result_status));
         const markdownSummary = (0, markdownRenderer_1.generateMarkdownSummary)(testRunSummary.metrics_summary, testRunSummary.baseline_test_run_details?.metrics_summary, checks);
         resultSummaryStrings.push(markdownSummary);
         resultSummaryStrings.push('\n');
@@ -36311,17 +36311,15 @@ function getThresholdsMarkdown(thresholdsMetrics) {
  */
 function getTestRunStatusMarkdown(testRunStatus) {
     let statusString = '';
-    if (testRunStatus === undefined || testRunStatus === null) {
-        statusString = '❓ Unknown';
-    }
-    else if (testRunStatus === 3) {
-        statusString = '✅ Passed';
-    }
-    else if (testRunStatus === 4) {
-        statusString = '⚠️ Timed out';
-    }
-    else {
-        statusString = '❌ Failed';
+    switch (testRunStatus) {
+        case 'Passed':
+            statusString = '✅ Passed';
+            break;
+        case 'Failed':
+            statusString = '❌ Failed';
+            break;
+        default:
+            statusString = '🛑 Error';
     }
     return `- **Overall Status:** ${statusString}`;
 }

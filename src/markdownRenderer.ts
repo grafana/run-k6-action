@@ -391,18 +391,19 @@ export function getThresholdsMarkdown(
  * @returns Markdown string for test run status
  */
 export function getTestRunStatusMarkdown(
-  testRunStatus: number | undefined
+  testRunStatus: string | undefined
 ): string {
   let statusString = ''
 
-  if (testRunStatus === undefined || testRunStatus === null) {
-    statusString = '❓ Unknown'
-  } else if (testRunStatus === 3) {
-    statusString = '✅ Passed'
-  } else if (testRunStatus === 4) {
-    statusString = '⚠️ Timed out'
-  } else {
-    statusString = '❌ Failed'
+  switch (testRunStatus) {
+    case 'Passed':
+      statusString = '✅ Passed'
+      break
+    case 'Failed':
+      statusString = '❌ Failed'
+      break
+    default:
+      statusString = '🛑 Error'
   }
 
   return `- **Overall Status:** ${statusString}`

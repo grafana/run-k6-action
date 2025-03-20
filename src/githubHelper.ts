@@ -207,7 +207,7 @@ export async function generatePRComment(
     }
 
     resultSummaryStrings.push(
-      getTestRunStatusMarkdown(testRunSummary.run_status)
+      getTestRunStatusMarkdown(testRunSummary.result_status)
     )
 
     const markdownSummary = generateMarkdownSummary(
