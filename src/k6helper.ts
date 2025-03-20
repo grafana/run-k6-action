@@ -2,7 +2,7 @@
 import * as core from '@actions/core'
 import { ChildProcess, execSync, spawn } from 'child_process'
 import path from 'path'
-import { apiRequest } from './apiUtils'
+import { apiRequest, DEFAULT_RETRY_OPTIONS } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
 import { Check, ChecksResponse, TestRunSummary, TestRunUrlsMap } from './types'
 
@@ -218,7 +218,15 @@ export async function fetchTestRunSummary(
   const baseUrl = getK6CloudBaseUrl()
   const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary,baseline_test_run_details`
 
-  return apiRequest<TestRunSummary>(url)
+  return apiRequest<TestRunSummary>(
+    url,
+    {},
+    {
+      ...DEFAULT_RETRY_OPTIONS,
+      backoffFactor: 3,
+      maxRetries: 5,
+    }
+  )
 }
 
 /**
@@ -233,7 +241,15 @@ export async function fetchChecks(testRunId: string): Promise<Check[]> {
   const baseUrl = getK6CloudBaseUrl()
   const url = `${baseUrl}/loadtests/v4/test_runs(${testRunId})/checks?$select=name,metric_summary&$filter=group_id eq null`
 
-  const response = await apiRequest<ChecksResponse>(url)
+  const response = await apiRequest<ChecksResponse>(
+    url,
+    {},
+    {
+      ...DEFAULT_RETRY_OPTIONS,
+      backoffFactor: 3,
+      maxRetries: 5,
+    }
+  )
 
   // If the API request fails, return an empty array
   if (!response) {

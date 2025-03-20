@@ -36113,7 +36113,11 @@ function extractTestRunId(testRunUrl) {
 async function fetchTestRunSummary(testRunId) {
     const baseUrl = getK6CloudBaseUrl();
     const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary,baseline_test_run_details`;
-    return (0, apiUtils_1.apiRequest)(url);
+    return (0, apiUtils_1.apiRequest)(url, {}, {
+        ...apiUtils_1.DEFAULT_RETRY_OPTIONS,
+        backoffFactor: 3,
+        maxRetries: 5,
+    });
 }
 /**
  * Fetches the checks for a test run from the Grafana Cloud K6 API.
@@ -36126,7 +36130,11 @@ async function fetchTestRunSummary(testRunId) {
 async function fetchChecks(testRunId) {
     const baseUrl = getK6CloudBaseUrl();
     const url = `${baseUrl}/loadtests/v4/test_runs(${testRunId})/checks?$select=name,metric_summary&$filter=group_id eq null`;
-    const response = await (0, apiUtils_1.apiRequest)(url);
+    const response = await (0, apiUtils_1.apiRequest)(url, {}, {
+        ...apiUtils_1.DEFAULT_RETRY_OPTIONS,
+        backoffFactor: 3,
+        maxRetries: 5,
+    });
     // If the API request fails, return an empty array
     if (!response) {
         return [];

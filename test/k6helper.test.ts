@@ -43,6 +43,7 @@ vi.mock('@actions/core', () => ({
 // Mock apiRequest to return specific responses for different tests
 vi.mock('../src/apiUtils', () => ({
   apiRequest: vi.fn(),
+  DEFAULT_RETRY_OPTIONS: {},
 }))
 
 describe('cleanScriptPath', () => {
@@ -279,7 +280,9 @@ describe('fetchTestRunSummary', () => {
     // Verify the result
     expect(result).toEqual(mockTestRunSummary)
     expect(apiRequest).toHaveBeenCalledWith(
-      expect.stringContaining('/test_runs(1234)/result_summary')
+      expect.stringContaining('/test_runs(1234)/result_summary'),
+      {},
+      expect.any(Object)
     )
   })
 
@@ -293,7 +296,9 @@ describe('fetchTestRunSummary', () => {
     // Verify the result
     expect(result).toBeUndefined()
     expect(apiRequest).toHaveBeenCalledWith(
-      expect.stringContaining('/test_runs(1234)/result_summary')
+      expect.stringContaining('/test_runs(1234)/result_summary'),
+      {},
+      expect.any(Object)
     )
   })
 })
@@ -342,7 +347,9 @@ describe('fetchChecks', () => {
     // Verify the result
     expect(result).toEqual(mockChecksResponse.value)
     expect(apiRequest).toHaveBeenCalledWith(
-      expect.stringContaining('/test_runs(1234)/checks')
+      expect.stringContaining('/test_runs(1234)/checks'),
+      {},
+      expect.any(Object)
     )
   })
 
@@ -356,7 +363,9 @@ describe('fetchChecks', () => {
     // Verify the result
     expect(result).toEqual([])
     expect(apiRequest).toHaveBeenCalledWith(
-      expect.stringContaining('/test_runs(1234)/checks')
+      expect.stringContaining('/test_runs(1234)/checks'),
+      {},
+      expect.any(Object)
     )
   })
 })
