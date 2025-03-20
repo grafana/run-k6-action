@@ -2,8 +2,13 @@
 import * as core from '@actions/core'
 import { ChildProcess, spawn } from 'child_process'
 import path from 'path'
+import { apiRequest } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
-import { TestRunUrlsMap } from './types'
+import { Check, ChecksResponse, TestRunSummary, TestRunUrlsMap } from './types'
+
+function getK6CloudBaseUrl(): string {
+  return process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io'
+}
 
 /**
  * Validates the test paths by running `k6 inspect --execution-requirements` on each test file.
@@ -186,4 +191,55 @@ export function executeRunK6Command(
   )
 
   return child
+}
+
+/**
+ * Extracts the test run ID from a Grafana Cloud K6 URL.
+ *
+ * @param {string} testRunUrl - The URL of the test run (e.g., https://xxx.grafana.net/a/k6-app/runs/4050582)
+ * @returns {string | null} - The test run ID or null if not found
+ */
+export function extractTestRunId(testRunUrl: string): string | null {
+  const match = testRunUrl.match(/\/runs\/(\d+)$/)
+  return match ? match[1] : null
+}
+
+/**
+ * Fetches the test run summary from the Grafana Cloud K6 API.
+ * Uses retry mechanism with exponential backoff for reliability.
+ * Will automatically retry on transient errors and server errors, but not on client errors like 404 or 401.
+ *
+ * @param {string} testRunId - The ID of the test run to fetch the summary for
+ * @returns {TestRunSummary | undefined} The test run summary or undefined if there was an error
+ */
+export async function fetchTestRunSummary(
+  testRunId: string
+): Promise<TestRunSummary | undefined> {
+  const baseUrl = getK6CloudBaseUrl()
+  const url = `${baseUrl}/cloud/v5/test_runs(${testRunId})/result_summary?$select=metrics_summary,baseline_test_run_details`
+
+  return apiRequest<TestRunSummary>(url)
+}
+
+/**
+ * Fetches the checks for a test run from the Grafana Cloud K6 API.
+ * Uses retry mechanism with exponential backoff for reliability.
+ * Will automatically retry on transient errors and server errors, but not on client errors like 404 or 401.
+ *
+ * @param {string} testRunId - The ID of the test run to fetch checks for
+ * @returns {Promise<Check[]>} Array of checks or empty array if there was an error
+ */
+export async function fetchChecks(testRunId: string): Promise<Check[]> {
+  const baseUrl = getK6CloudBaseUrl()
+  const url = `${baseUrl}/loadtests/v4/test_runs(${testRunId})/checks?$select=name,metric_summary&$filter=group_id eq null`
+
+  const response = await apiRequest<ChecksResponse>(url)
+
+  // If the API request fails, return an empty array
+  if (!response) {
+    return []
+  }
+
+  // Return the checks array from the response
+  return response.value
 }
