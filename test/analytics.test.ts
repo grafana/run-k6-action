@@ -82,7 +82,7 @@ describe('analytics', () => {
       await sendAnalytics(mockUserSpecifiedData)
 
       expect(apiUtils.apiRequest).toHaveBeenCalledWith(
-        'https://stats.grafana.org',
+        'https://stats.grafana.org/runk6action-usage-report',
         expect.any(Object),
         expect.any(Object)
       )
@@ -97,7 +97,7 @@ describe('analytics', () => {
       await sendAnalytics(mockUserSpecifiedData)
 
       expect(apiUtils.apiRequest).toHaveBeenCalledWith(
-        'https://custom-stats.example.com',
+        'https://custom-stats.example.com/runk6action-usage-report',
         expect.any(Object),
         expect.any(Object)
       )
