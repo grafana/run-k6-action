@@ -35183,13 +35183,11 @@ async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // Network errors, timeouts, etc.
             lastError = error instanceof Error ? error : new Error(String(error));
         }
-        finally {
-            // Log the retry attempt
-            if (attemptCount < retry.maxRetries) {
-                const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
-                core.info(`Request to ${url} failed: ${lastError?.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
-                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-            }
+        // Log the retry attempt
+        if (attemptCount < retry.maxRetries) {
+            const retryDelayMs = retry.initialDelayMs * Math.pow(retry.backoffFactor, attemptCount);
+            core.info(`Request to ${url} failed: ${lastError?.message}. Retrying in ${retryDelayMs}ms... (${attemptCount + 1}/${retry.maxRetries})`);
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
         }
         attemptCount++;
     }
