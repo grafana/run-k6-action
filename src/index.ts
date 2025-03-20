@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import { ChildProcess } from 'child_process'
 
+import { sendAnalytics, UserSpecifiedAnalyticsData } from './analytics'
 import { generatePRComment } from './githubHelper'
 import {
   cleanScriptPath,
@@ -33,7 +34,7 @@ export async function run(): Promise<void> {
     const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts')
     const shouldCommentOnPR = core.getBooleanInput('cloud-comment-on-pr')
     const debug = core.getBooleanInput('debug')
-
+    const disableAnalytics = core.getBooleanInput('disable-analytics')
     const allPromises: Promise<void>[] = []
 
     core.debug(`Flag to show k6 progress output set to: ${debug}`)
@@ -69,6 +70,22 @@ export async function run(): Promise<void> {
     }
 
     const isCloud = isCloudIntegrationEnabled()
+
+    if (!disableAnalytics) {
+      const userSpecifiedAnalyticsData: UserSpecifiedAnalyticsData = {
+        totalTestScriptsExecuted: verifiedTestPaths.length,
+        isCloudRun: isCloud,
+        isUsingFlags: flags.length > 0,
+        isUsingInspectFlags: inspectFlags.length > 0,
+        failFast,
+        commentOnPr: shouldCommentOnPR,
+        parallelFlag: parallel,
+        cloudRunLocally,
+        onlyVerifyScripts,
+      }
+
+      sendAnalytics(userSpecifiedAnalyticsData)
+    }
 
     const commands = testPaths.map((testPath) =>
         generateK6RunCommand(testPath, flags, isCloud, cloudRunLocally)

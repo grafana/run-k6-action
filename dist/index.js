@@ -35099,6 +35099,70 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 1267:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getUsageStatsId = getUsageStatsId;
+exports.sendAnalytics = sendAnalytics;
+const crypto_1 = __importDefault(__nccwpck_require__(6982));
+const os_1 = __importDefault(__nccwpck_require__(857));
+const apiUtils_1 = __nccwpck_require__(890);
+const k6helper_1 = __nccwpck_require__(5354);
+const ANALYTICS_SOURCE = 'github-action';
+/**
+ * Gets the usage stats id which is an identifier for the invocation of the action
+ * Here we use a hash of GITHUB_ACTION and GITHUB_REPOSITORY to identify the unique users and
+ * club multiple invocations from the same user/repo
+ *
+ * @returns The usage stats id
+ */
+function getUsageStatsId() {
+    const githubAction = process.env.GITHUB_ACTION || '';
+    const githubWorkflow = process.env.GITHUB_WORKFLOW || '';
+    let idString = '';
+    // Generate a random UUID if both environment variables are empty
+    if (!githubAction && !githubWorkflow) {
+        idString = crypto_1.default.randomUUID();
+    }
+    else {
+        idString = `${githubAction}-${githubWorkflow}`;
+    }
+    return crypto_1.default.createHash('sha256').update(idString).digest('hex');
+}
+async function sendAnalytics(userSpecifiedAnalyticsData) {
+    const analyticsData = {
+        ...userSpecifiedAnalyticsData,
+        source: ANALYTICS_SOURCE,
+        usageStatsId: getUsageStatsId(),
+        osPlatform: os_1.default.platform(),
+        osArch: os_1.default.arch(),
+        osType: os_1.default.type(),
+        k6Version: (0, k6helper_1.getInstalledK6Version)(),
+    };
+    const url = process.env.GRAFANA_ANALYTICS_URL || 'https://stats.grafana.org';
+    try {
+        await (0, apiUtils_1.apiRequest)(`${url}/runk6action-usage-report`, {
+            method: 'POST',
+            body: JSON.stringify(analyticsData),
+        }, {
+            ...apiUtils_1.DEFAULT_RETRY_OPTIONS,
+            maxRetries: 1,
+        });
+    }
+    catch (error) {
+        console.warn('Error sending analytics:', error);
+    }
+}
+
+
+/***/ }),
+
 /***/ 890:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -35226,8 +35290,13 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
             core.info(`Response: ${errorText}`);
             return undefined;
         }
-        // Parse and return the JSON response
-        return (await response.json());
+        const responseText = await response.text();
+        try {
+            return JSON.parse(responseText);
+        }
+        catch {
+            return responseText;
+        }
     }
     catch (error) {
         core.error(`Exception during API request to ${url}: ${error instanceof Error ? error.message : String(error)}`);
@@ -35492,6 +35561,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
+const analytics_1 = __nccwpck_require__(1267);
 const githubHelper_1 = __nccwpck_require__(2384);
 const k6helper_1 = __nccwpck_require__(5354);
 const utils_1 = __nccwpck_require__(1798);
@@ -35512,6 +35582,7 @@ async function run() {
         const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts');
         const shouldCommentOnPR = core.getBooleanInput('cloud-comment-on-pr');
         const debug = core.getBooleanInput('debug');
+        const disableAnalytics = core.getBooleanInput('disable-analytics');
         const allPromises = [];
         core.debug(`Flag to show k6 progress output set to: ${debug}`);
         core.debug(`🔍 Found following ${testPaths.length} test run files:`);
@@ -35534,6 +35605,20 @@ async function run() {
             return;
         }
         const isCloud = (0, k6helper_1.isCloudIntegrationEnabled)();
+        if (!disableAnalytics) {
+            const userSpecifiedAnalyticsData = {
+                totalTestScriptsExecuted: verifiedTestPaths.length,
+                isCloudRun: isCloud,
+                isUsingFlags: flags.length > 0,
+                isUsingInspectFlags: inspectFlags.length > 0,
+                failFast,
+                commentOnPr: shouldCommentOnPR,
+                parallelFlag: parallel,
+                cloudRunLocally,
+                onlyVerifyScripts,
+            };
+            (0, analytics_1.sendAnalytics)(userSpecifiedAnalyticsData);
+        }
         const commands = testPaths.map((testPath) => (0, k6helper_1.generateK6RunCommand)(testPath, flags, isCloud, cloudRunLocally)), TOTAL_TEST_RUNS = commands.length, TEST_RESULT_URLS_MAP = new Proxy({}, {
             set: (target, key, value) => {
                 target[key] = value;
@@ -35865,6 +35950,8 @@ exports.executeRunK6Command = executeRunK6Command;
 exports.extractTestRunId = extractTestRunId;
 exports.fetchTestRunSummary = fetchTestRunSummary;
 exports.fetchChecks = fetchChecks;
+exports.extractK6SemVer = extractK6SemVer;
+exports.getInstalledK6Version = getInstalledK6Version;
 // Common helper functions used in the action
 const core = __importStar(__nccwpck_require__(7484));
 const child_process_1 = __nccwpck_require__(5317);
@@ -36046,6 +36133,35 @@ async function fetchChecks(testRunId) {
     }
     // Return the checks array from the response
     return response.value;
+}
+/**
+ * Extracts the semantic version (e.g., "0.56.0") from the full k6 version string which looks like
+ * `k6 v0.56.0 (go1.23.4, darwin/arm64)`.
+ *
+ * @param {string} versionString - The full version string from k6 version command
+ * @returns {string} The semantic version or empty string if not found
+ */
+function extractK6SemVer(versionString) {
+    // Match pattern like "v0.56.0" and extract just the digits and dots
+    const match = versionString.match(/v(\d+\.\d+\.\d+)/);
+    return match ? match[1] : '';
+}
+/**
+ * Gets the installed k6 version using the `k6 version` command.
+ *
+ * @returns The installed k6 version as a semantic version string
+ */
+function getInstalledK6Version() {
+    try {
+        // Use execSync for synchronous output capture
+        const output = (0, child_process_1.execSync)('k6 version').toString().trim();
+        // Return only the semantic version if requested
+        return extractK6SemVer(output);
+    }
+    catch (error) {
+        console.error('Error executing k6 version:', error);
+        return '';
+    }
 }
 
 

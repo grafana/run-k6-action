@@ -45,6 +45,10 @@ inputs:
     description: 'If true, the output from k6 will be shown in the action logs, else only the summary will be shown'
     default: "false"
     required: false
+  disable-analytics:
+    description: 'If true, the anonymous usage analytics reporting will be disabled'
+    default: "false"
+    required: false
 
 runs:
   using: node20

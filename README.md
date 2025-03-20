@@ -33,6 +33,7 @@ The following inputs can be used as `step.with` key:
 | `cloud-comment-on-pr` | boolean | `false`  | `true`  | If `true`, the workflow comments a link to the cloud test run on the pull request (if present)                                                                                                                                                                                                       |
 | `only-verify-scripts` | boolean | `false`  | `false` | If `true`, only check if the test scripts are valid and skip the test execution'                                                                                                                                                                                                                     |
 | `debug`               | boolean | `false`  | `false` | If true, the output from k6 will be shown in the action logs, else only the summary will be shown.                                                                                                                                                                                                   |
+| `disable-analytics`   | boolean | `false`  | `false` | If true, the anonymous usage analytics reporting will be disabled                                                                                                                                                                                                                                    |
 
 ## Usage
 

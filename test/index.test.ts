@@ -37,6 +37,10 @@ vi.mock('../src/utils', () => ({
   findTestsToRun: vi.fn(),
 }))
 
+vi.mock('../src/analytics', () => ({
+  sendAnalytics: vi.fn(),
+}))
+
 vi.mock('../src/k6helper', () => ({
   validateTestPaths: vi.fn(),
   executeRunK6Command: vi.fn(),
