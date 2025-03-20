@@ -125,10 +125,11 @@ export async function apiRequest<T>(
     }
 
     // Parse and return the JSON response
+    const responseText = await response.text()
     try {
-      return (await response.json()) as T
+      return JSON.parse(responseText) as T
     } catch {
-      return (await response.text()) as T
+      return responseText as T
     }
   } catch (error) {
     core.error(

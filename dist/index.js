@@ -35291,11 +35291,12 @@ async function apiRequest(url, options = {}, retryOptions = {}) {
             return undefined;
         }
         // Parse and return the JSON response
+        const responseText = await response.text();
         try {
-            return (await response.json());
+            return JSON.parse(responseText);
         }
         catch {
-            return (await response.text());
+            return responseText;
         }
     }
     catch (error) {
