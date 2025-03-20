@@ -71,6 +71,8 @@ export async function run(): Promise<void> {
 
     const isCloud = isCloudIntegrationEnabled()
 
+    console.log('Disable analytics:', disableAnalytics)
+
     if (!disableAnalytics) {
       const userSpecifiedAnalyticsData: UserSpecifiedAnalyticsData = {
         totalTestScriptsExecuted: verifiedTestPaths.length,

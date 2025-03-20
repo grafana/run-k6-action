@@ -35600,6 +35600,7 @@ async function run() {
             return;
         }
         const isCloud = (0, k6helper_1.isCloudIntegrationEnabled)();
+        console.log('Disable analytics:', disableAnalytics);
         if (!disableAnalytics) {
             const userSpecifiedAnalyticsData = {
                 totalTestScriptsExecuted: verifiedTestPaths.length,
