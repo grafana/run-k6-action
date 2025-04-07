@@ -141,13 +141,10 @@ export function generateK6RunCommand(
 
   if (isCloud) {
     // Cloud execution is possible for the test
+    command = 'k6 cloud run';
     if (cloudRunLocally) {
-      // Execute tests locally and upload results to cloud
-      command = 'k6 run'
-      args.push(`--out=cloud`)
-    } else {
-      // Execute tests in cloud
-      command = 'k6 cloud'
+        // Execute tests locally and upload results to cloud
+        args.push(`--local-execution`);
     }
   } else {
     // Local execution
