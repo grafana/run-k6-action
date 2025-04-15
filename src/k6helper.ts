@@ -5,7 +5,6 @@ import path from 'path'
 import { apiRequest, DEFAULT_RETRY_OPTIONS } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
 import { Check, ChecksResponse, TestRunSummary, TestRunUrlsMap } from './types'
-import { parseArgsStringToArgv } from 'string-argv'
 
 function getK6CloudBaseUrl(): string {
   return process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io'
@@ -171,7 +170,7 @@ export function executeRunK6Command(
   testResultUrlsMap: TestRunUrlsMap,
   debug: boolean
 ): ChildProcess {
-  const parts = parseArgsStringToArgv(command)
+  const parts = command.split(' ')
   const cmd = parts[0]
   const args = parts.slice(1)
 

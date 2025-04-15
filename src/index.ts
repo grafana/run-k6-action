@@ -12,7 +12,6 @@ import {
 } from './k6helper'
 import { TestRunUrlsMap } from './types'
 import { findTestsToRun } from './utils'
-import { parseArgsStringToArgv } from 'string-argv'
 
 const TEST_PIDS: number[] = []
 
@@ -51,7 +50,7 @@ export async function run(): Promise<void> {
 
     const verifiedTestPaths = await validateTestPaths(
       testPaths,
-      inspectFlags ? parseArgsStringToArgv(inspectFlags) : []
+      inspectFlags ? inspectFlags.split(' ') : []
     )
 
     if (verifiedTestPaths.length === 0) {
