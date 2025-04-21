@@ -7,6 +7,8 @@ export const options = {
 }
 
 export default function () {
+  console.log('Env var value')
+  console.log(__ENV.TEST_FLAG_ENV_VAR)
   check(__ENV, {
     'System env var': (env) =>
       env.TEST_SYSTEM_ENV_VAR === 'test-system-env-var-value',

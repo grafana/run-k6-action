@@ -95,4 +95,4 @@ jobs:
         with:
           path: |
             ./dev/env-var-test.js
-          flags: --vus 1 --duration 1s --env TEST_FLAG_ENV_VAR="test flag env var value" -e TEST_SYSTEM_ENV_VAR_E=test-cli-e-env-var-value
+          flags: --env TEST_FLAG_ENV_VAR='test flag env var value' -e TEST_SYSTEM_ENV_VAR_E=test-cli-e-env-var-value
