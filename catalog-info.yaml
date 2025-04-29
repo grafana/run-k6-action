@@ -6,7 +6,6 @@ metadata:
   description: |
     This action allows you to easily execute k6 tests as part of your GitHub Actions workflow.s
   annotations:
-    backstage.io/techdocs-ref: dir:.
     github.com/project-slug: grafana/run-k6-action
 spec:
   type: library
