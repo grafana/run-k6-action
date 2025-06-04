@@ -6,6 +6,7 @@ import { generatePRComment } from './githubHelper'
 import {
   cleanScriptPath,
   executeRunK6Command,
+  extractTestRunId,
   generateK6RunCommand,
   isCloudIntegrationEnabled,
   validateTestPaths,
@@ -198,10 +199,24 @@ export async function run(): Promise<void> {
     }
     await Promise.all(allPromises)
 
-    if (isCloud && shouldCommentOnPR) {
-      // Generate PR comment with test run URLs
-      await generatePRComment(TEST_RESULT_URLS_MAP)
-    }
+    if (isCloud) {
+      const testRunIds: Record<string, string> = {}
+      for (const [scriptPath, testRunUrl] of Object.entries(TEST_RESULT_URLS_MAP)) {
+        const testRunId = extractTestRunId(testRunUrl)
+        if (testRunId) {
+          testRunIds[scriptPath] = testRunId
+        }
+      }
+
+      // Output the testRunIds as a JSON string
+      core.setOutput('testRunIds', JSON.stringify(testRunIds))
+      core.debug('TestRunIds have been set as an output successfully.')
+
+      if (shouldCommentOnPR) {
+        // Generate PR comment with test run URLs
+        await generatePRComment(TEST_RESULT_URLS_MAP)
+      }
+    }    
 
     if (!allTestsPassed) {
       console.log('🚨 Some tests failed')

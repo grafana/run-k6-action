@@ -35708,9 +35708,21 @@ async function run() {
             }
         }
         await Promise.all(allPromises);
-        if (isCloud && shouldCommentOnPR) {
-            // Generate PR comment with test run URLs
-            await (0, githubHelper_1.generatePRComment)(TEST_RESULT_URLS_MAP);
+        if (isCloud) {
+            const testRunIds = {};
+            for (const [scriptPath, testRunUrl] of Object.entries(TEST_RESULT_URLS_MAP)) {
+                const testRunId = (0, k6helper_1.extractTestRunId)(testRunUrl);
+                if (testRunId) {
+                    testRunIds[scriptPath] = testRunId;
+                }
+            }
+            // Output the testRunIds as a JSON string
+            core.setOutput('testRunIds', JSON.stringify(testRunIds));
+            core.debug('TestRunIds have been set as an output successfully.');
+            if (shouldCommentOnPR) {
+                // Generate PR comment with test run URLs
+                await (0, githubHelper_1.generatePRComment)(TEST_RESULT_URLS_MAP);
+            }
         }
         if (!allTestsPassed) {
             console.log('🚨 Some tests failed');
