@@ -137,27 +137,27 @@ Comment Grafana cloud k6 test URL on PR
     style="pointer-events: none;" />
 </div>
 
-Output testRunIds to GitHub workflow 
+Output testRunIds to GitHub workflow
 
 ```yaml
 jobs:
   run-k6:
     runs-on: ubuntu-latest
     steps:
-    - name: Run k6 test
-      id: run_k6
-      uses: grafana/run-k6-action@v1
-      with:
-        path: |
-          ./tests/api*.js
-      env:
-        K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
-        K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
+      - name: Run k6 test
+        id: run_k6
+        uses: grafana/run-k6-action@v1
+        with:
+          path: |
+            ./tests/api*.js
+        env:
+          K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
+          K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
 
-    - name: Print test run IDs
-      run: echo "Test run IDs - $TEST_RUN_IDS"
-      env:
-        TEST_RUN_IDS: ${{ steps.run_k6.outputs.testRunIds }}
+      - name: Print test run IDs
+        run: echo "Test run IDs - $TEST_RUN_IDS"
+        env:
+          TEST_RUN_IDS: ${{ steps.run_k6.outputs.testRunIds }}
 ```
 
 Typescript [Compatibility Mode](https://grafana.com/docs/k6/latest/using-k6/javascript-typescript-compatibility-mode/#javascript-and-typescript-compatibility-mode)

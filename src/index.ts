@@ -201,7 +201,9 @@ export async function run(): Promise<void> {
 
     if (isCloud) {
       const testRunIds: Record<string, string> = {}
-      for (const [scriptPath, testRunUrl] of Object.entries(TEST_RESULT_URLS_MAP)) {
+      for (const [scriptPath, testRunUrl] of Object.entries(
+        TEST_RESULT_URLS_MAP
+      )) {
         const testRunId = extractTestRunId(testRunUrl)
         if (testRunId) {
           testRunIds[scriptPath] = testRunId
@@ -216,7 +218,7 @@ export async function run(): Promise<void> {
         // Generate PR comment with test run URLs
         await generatePRComment(TEST_RESULT_URLS_MAP)
       }
-    }    
+    }
 
     if (!allTestsPassed) {
       console.log('🚨 Some tests failed')
