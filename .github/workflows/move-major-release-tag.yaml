@@ -7,9 +7,13 @@ on:
 jobs:
   move-major-tag:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Get major version number and update tag
       run: |
