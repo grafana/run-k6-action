@@ -105,6 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: grafana/setup-k6-action@v1
+        with:
           browser: true
       - uses: grafana/run-k6-action@v1
         with:
@@ -172,6 +173,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: grafana/setup-k6-action@v1
+        with:
           browser: true
       - uses: grafana/run-k6-action@v1
         with:
