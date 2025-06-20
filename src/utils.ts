@@ -1,5 +1,4 @@
 import * as glob from '@actions/glob'
-
 import * as fs from 'fs-extra'
 
 /**

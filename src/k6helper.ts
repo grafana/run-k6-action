@@ -137,7 +137,7 @@ export function generateK6RunCommand(
   cloudRunLocally: boolean
 ): string {
   let command
-  const args = [`--address=`, ...flags]
+  const args = [`--address=''`, ...flags]
 
   if (isCloud) {
     // Cloud execution is possible for the test
