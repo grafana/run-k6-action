@@ -5,6 +5,7 @@ import path from 'path'
 import { apiRequest, DEFAULT_RETRY_OPTIONS } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
 import { Check, ChecksResponse, TestRunSummary, TestRunUrlsMap } from './types'
+import { satisfies } from 'semver'
 
 function getK6CloudBaseUrl(): string {
   return process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io'
@@ -136,22 +137,29 @@ export function generateK6RunCommand(
   isCloud: boolean,
   cloudRunLocally: boolean
 ): string {
-  let command
+  let command = 'k6 run'
   const args = [`--address=`, ...(flags ? flags.split(' ') : [])]
 
+  // Cloud execution is possible for the test
   if (isCloud) {
-    // Cloud execution is possible for the test
-    if (cloudRunLocally) {
-      // Execute tests locally and upload results to cloud
-      command = 'k6 run'
-      args.push(`--out=cloud`)
+    // Get the current k6 version
+    const k6Version = getInstalledK6Version()
+    // In k6 v0.54.0 and later, `k6 cloud run` is the command to use
+    // https://github.com/grafana/k6/blob/20369d707f5ee6d7fd8a995972ccdd6b86db2b5d/release%20notes/v0.54.0.md?plain=1#L122
+    if (satisfies(k6Version, '>=0.54.0')) {
+      command = 'k6 cloud run';
+      if (cloudRunLocally) {
+          // Execute tests locally and upload results to cloud
+          args.push(`--local-execution`);
+      }
     } else {
-      // Execute tests in cloud
-      command = 'k6 cloud'
+      if (cloudRunLocally) {
+        args.push('--out=cloud')
+      } else {
+        // Execute tests in cloud
+        command = 'k6 cloud'
+      }
     }
-  } else {
-    // Local execution
-    command = 'k6 run'
   }
 
   // Add path the arguments list
