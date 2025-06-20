@@ -2,12 +2,19 @@ name: Workflow using the k6 run action
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
 
   unit-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Node.js
         id: setup-node
         uses: actions/setup-node@v4
@@ -30,11 +37,15 @@ jobs:
   protocol:
     needs: [unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       K6_CLOUD_TOKEN: ${{ secrets.K6_CLOUD_TOKEN }}
       K6_CLOUD_PROJECT_ID: ${{ secrets.K6_CLOUD_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@main
       - uses: ./
@@ -48,8 +59,12 @@ jobs:
   protocol-without-flags:
     needs: [unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@main
       - uses: ./
@@ -60,8 +75,12 @@ jobs:
   show-complete-k6-output:
     needs: [unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@main
       - uses: ./
@@ -73,8 +92,12 @@ jobs:
   verify-scripts:
     needs: [unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@main
       - uses: ./
@@ -86,10 +109,14 @@ jobs:
   env-var-test:
     needs: [unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       TEST_SYSTEM_ENV_VAR: "test-system-env-var-value"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Grafana k6
         uses: grafana/setup-k6-action@main
       - uses: ./

@@ -12,6 +12,7 @@ vi.mock('@actions/core', () => ({
   getBooleanInput: vi.fn(),
   setFailed: vi.fn(),
   debug: vi.fn(),
+  setOutput: vi.fn(),
 }))
 
 vi.mock('child_process', () => ({
@@ -47,6 +48,7 @@ vi.mock('../src/k6helper', () => ({
   generateK6RunCommand: vi.fn(),
   isCloudIntegrationEnabled: vi.fn(),
   cleanScriptPath: vi.fn(),
+  extractTestRunId: vi.fn(),
 }))
 
 vi.mock('../src/githubHelper', () => ({
@@ -454,6 +456,68 @@ describe('run function', () => {
       '',
       true,
       false
+    )
+  })
+
+  it('should extract and output the testRunIds', async () => {
+    // Mock input values
+    vi.mocked(core.getInput).mockImplementation((name) => {
+      if (name === 'path') return 'test/*.js'
+      return ''
+    })
+
+    vi.mocked(core.getBooleanInput).mockImplementation((name) => {
+      if (name === 'parallel') return true
+      if (name === 'cloud-comment-on-pr') return true
+      return false
+    })
+
+    // Mock test paths
+    vi.mocked(utils.findTestsToRun).mockResolvedValue(['test1.js'])
+    vi.mocked(k6helper.validateTestPaths).mockResolvedValue(['test1.js'])
+    vi.mocked(k6helper.isCloudIntegrationEnabled).mockReturnValue(true)
+    vi.mocked(k6helper.generateK6RunCommand).mockReturnValue(
+      'k6 cloud test1.js'
+    )
+
+    // Mock execution of `k6 run` command
+    vi.mocked(k6helper.executeRunK6Command).mockImplementation(
+      (command, totalRuns, resultUrlsMap) => {
+        console.log('Mock executeRunK6Command called with:', {
+          command,
+          totalRuns,
+          resultUrlsMap,
+        })
+        Object.assign(resultUrlsMap, {
+          'test1.js': 'https://example.com/testRun1',
+        })
+        return {
+          on: vi.fn((event, callback) => {
+            if (event === 'exit') callback(0, '')
+          }),
+          pid: 123,
+        } as unknown as ChildProcess
+      }
+    )
+
+    // Mock `extractTestRunId`
+    vi.mocked(k6helper.extractTestRunId).mockImplementation((url) => {
+      if (url === 'https://example.com/testRun1') return 'testRunId1'
+      return null
+    })
+
+    // Run the function
+    await run()
+
+    // Verify `extractTestRunId` is called
+    expect(k6helper.extractTestRunId).toHaveBeenCalledWith(
+      'https://example.com/testRun1'
+    )
+
+    // Verify `core.setOutput` is called with the correct arguments
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'testRunIds',
+      JSON.stringify({ 'test1.js': 'testRunId1' })
     )
   })
 })
