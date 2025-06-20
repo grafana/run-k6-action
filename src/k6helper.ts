@@ -5,6 +5,7 @@ import path from 'path'
 import { apiRequest, DEFAULT_RETRY_OPTIONS } from './apiUtils'
 import { parseK6Output } from './k6OutputParser'
 import { Check, ChecksResponse, TestRunSummary, TestRunUrlsMap } from './types'
+import { satisfies } from 'semver'
 
 function getK6CloudBaseUrl(): string {
   return process.env.K6_CLOUD_BASE_URL || 'https://api.k6.io'
@@ -145,7 +146,7 @@ export function generateK6RunCommand(
     const k6Version = getInstalledK6Version()
     // In k6 v0.54.0 and later, `k6 cloud run` is the command to use
     // https://github.com/grafana/k6/blob/20369d707f5ee6d7fd8a995972ccdd6b86db2b5d/release%20notes/v0.54.0.md?plain=1#L122
-    if (isVersionAtLeast(k6Version, '0.54.0')) {
+    if (satisfies(k6Version, '>=0.54.0')) {
       command = 'k6 cloud run';
       if (cloudRunLocally) {
           // Execute tests locally and upload results to cloud
@@ -296,38 +297,4 @@ export function getInstalledK6Version(): string {
     console.error('Error executing k6 version:', error)
     return ''
   }
-}
-
-/**
- * Compares two semantic version strings and checks if version1 is at least (greater than or equal to) version2.
- *
- * @param {string} version1 - The first version string (e.g., "0.56.0")
- * @param {string} version2 - The second version string (e.g., "0.55.0")
- * @returns {boolean} True if version1 is at least version2, false otherwise
- */
-export function isVersionAtLeast(
-  version1: string,
-  version2: string
-): boolean {
-  // Check that both versions are valid and have the same number of segments
-  if (!version1 || !version2) {
-    throw new Error('Both version strings must be provided')
-  }
-
-  const version1Segments = version1.split('.')
-  const version2Segments = version2.split('.')
-  if (version1Segments.length !== version2Segments.length) {
-    throw new Error(
-      'Both version strings must have the same number of segments'
-    )
-  }
-
-  // Solution from https://stackoverflow.com/questions/6832596/how-can-i-compare-software-version-number-using-javascript-only-numbers/65687141#65687141
-  // We can use this because we always have the same number of digits in the versions
-  const result = version1.localeCompare(version2, undefined, {
-    numeric: true,
-    sensitivity: 'base',
-  })
-
-  return result >= 0
 }
