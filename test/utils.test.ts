@@ -112,6 +112,10 @@ describe('utils', () => {
         input: '--flag1 "string with space and \'" ',
         expected: ['--flag1', "string with space and '"],
       },
+      {
+        input: '--vus=10 --duration=30s',
+        expected: ['--vus=10', '--duration=30s'],
+      },
     ]
 
     testCases.forEach(({ input, expected }) => {
