@@ -34,9 +34,13 @@ vi.mock('child_process', () => ({
   })),
 }))
 
-vi.mock('../src/utils', () => ({
-  findTestsToRun: vi.fn(),
-}))
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils')
+  return {
+    ...actual, // Keep all original functions
+    findTestsToRun: vi.fn(),
+  }
+})
 
 vi.mock('../src/analytics', () => ({
   sendAnalytics: vi.fn(),
@@ -453,7 +457,7 @@ describe('run function', () => {
     expect(k6helper.isCloudIntegrationEnabled).toHaveBeenCalled()
     expect(k6helper.generateK6RunCommand).toHaveBeenCalledWith(
       'test1.js',
-      '',
+      [],
       true,
       false
     )

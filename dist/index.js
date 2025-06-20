@@ -35576,8 +35576,8 @@ async function run() {
         const testPaths = await (0, utils_1.findTestsToRun)(core.getInput('path', { required: true }));
         const parallel = core.getBooleanInput('parallel');
         const failFast = core.getBooleanInput('fail-fast');
-        const flags = core.getInput('flags');
-        const inspectFlags = core.getInput('inspect-flags');
+        const flags = await (0, utils_1.parseStringToCLIArgs)(core.getInput('flags'));
+        const inspectFlags = await (0, utils_1.parseStringToCLIArgs)(core.getInput('inspect-flags'));
         const cloudRunLocally = core.getBooleanInput('cloud-run-locally');
         const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts');
         const shouldCommentOnPR = core.getBooleanInput('cloud-comment-on-pr');
@@ -35592,7 +35592,7 @@ async function run() {
         if (testPaths.length === 0) {
             throw new Error('No test files found');
         }
-        const verifiedTestPaths = await (0, k6helper_1.validateTestPaths)(testPaths, inspectFlags ? inspectFlags.split(' ') : []);
+        const verifiedTestPaths = await (0, k6helper_1.validateTestPaths)(testPaths, inspectFlags);
         if (verifiedTestPaths.length === 0) {
             throw new Error('No valid test files found');
         }
@@ -36064,7 +36064,7 @@ function isCloudIntegrationEnabled() {
  */
 function generateK6RunCommand(path, flags, isCloud, cloudRunLocally) {
     let command;
-    const args = [`--address=`, ...(flags ? flags.split(' ') : [])];
+    const args = [`--address=''`, ...flags];
     if (isCloud) {
         // Cloud execution is possible for the test
         if (cloudRunLocally) {
@@ -36552,6 +36552,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isDirectory = isDirectory;
 exports.findTestsToRun = findTestsToRun;
+exports.parseStringToCLIArgs = parseStringToCLIArgs;
 const glob = __importStar(__nccwpck_require__(7206));
 const fs = __importStar(__nccwpck_require__(2136));
 /**
@@ -36579,6 +36580,24 @@ async function findTestsToRun(path) {
     const globber = await glob.create(path);
     const files = await globber.glob();
     return files.filter((file) => !isDirectory(file));
+}
+/**
+ * Parses a string containing command-line arguments into an array of individual arguments.
+ * This function handles quoted strings, escaped characters, and other CLI argument formatting
+ * that would typically be processed by a shell.
+ *
+ * @param {string} input - The input string containing command-line arguments
+ * @returns {Promise<string[]>} - A promise that resolves to an array of parsed command-line arguments
+ * @example
+ * await parseStringToCLIArgs('--flag value "quoted string"')
+ * // Returns: ['--flag', 'value', 'quoted string']
+ */
+async function parseStringToCLIArgs(input) {
+    if (input === '' || input === null || input === undefined) {
+        return [];
+    }
+    const { parseArgsStringToArgv } = await __nccwpck_require__.e(/* import() */ 579).then(__nccwpck_require__.bind(__nccwpck_require__, 8579));
+    return parseArgsStringToArgv(input);
 }
 
 
@@ -38497,10 +38516,94 @@ module.exports = parseParams
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__nccwpck_require__.m = __webpack_modules__;
+/******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__nccwpck_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__nccwpck_require__.f).reduce((promises, key) => {
+/******/ 				__nccwpck_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__nccwpck_require__.u = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".index.js";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
+/******/ 	
+/******/ 	/* webpack/runtime/require chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded chunks
+/******/ 		// "1" means "loaded", otherwise not loaded yet
+/******/ 		var installedChunks = {
+/******/ 			792: 1
+/******/ 		};
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		var installChunk = (chunk) => {
+/******/ 			var moreModules = chunk.modules, chunkIds = chunk.ids, runtime = chunk.runtime;
+/******/ 			for(var moduleId in moreModules) {
+/******/ 				if(__nccwpck_require__.o(moreModules, moduleId)) {
+/******/ 					__nccwpck_require__.m[moduleId] = moreModules[moduleId];
+/******/ 				}
+/******/ 			}
+/******/ 			if(runtime) runtime(__nccwpck_require__);
+/******/ 			for(var i = 0; i < chunkIds.length; i++)
+/******/ 				installedChunks[chunkIds[i]] = 1;
+/******/ 		
+/******/ 		};
+/******/ 		
+/******/ 		// require() chunk loading for javascript
+/******/ 		__nccwpck_require__.f.require = (chunkId, promises) => {
+/******/ 			// "1" is the signal for "already loaded"
+/******/ 			if(!installedChunks[chunkId]) {
+/******/ 				if(true) { // all chunks have JS
+/******/ 					installChunk(require("./" + __nccwpck_require__.u(chunkId)));
+/******/ 				} else installedChunks[chunkId] = 1;
+/******/ 			}
+/******/ 		};
+/******/ 		
+/******/ 		// no external install chunk
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	

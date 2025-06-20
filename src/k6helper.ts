@@ -132,12 +132,12 @@ export function isCloudIntegrationEnabled(): boolean {
  */
 export function generateK6RunCommand(
   path: string,
-  flags: string,
+  flags: string[],
   isCloud: boolean,
   cloudRunLocally: boolean
 ): string {
   let command
-  const args = [`--address=`, ...(flags ? flags.split(' ') : [])]
+  const args = [`--address=''`, ...flags]
 
   if (isCloud) {
     // Cloud execution is possible for the test

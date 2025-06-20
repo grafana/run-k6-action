@@ -12,6 +12,7 @@ import {
   validateTestPaths,
 } from '../src/k6helper'
 import { TestRunUrlsMap } from '../src/types'
+import { parseStringToCLIArgs } from '../src/utils'
 
 // Mock child_process.spawn
 vi.mock('child_process', () => ({
@@ -131,38 +132,38 @@ describe('isCloudIntegrationEnabled', () => {
 describe('generateK6RunCommand', () => {
   it('should generate a local k6 run command when isCloud is false', () => {
     const path = 'test.js'
-    const flags = ''
+    const flags = []
     const isCloud = false
     const cloudRunLocally = false
     const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
-    expect(result).toBe('k6 run --address= test.js')
+    expect(result).toBe("k6 run --address='' test.js")
   })
 
   it('should generate a cloud k6 run command when isCloud is true and cloudRunLocally is false', () => {
     const path = 'test.js'
-    const flags = ''
+    const flags = []
     const isCloud = true
     const cloudRunLocally = false
     const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
-    expect(result).toBe('k6 cloud --address= test.js')
+    expect(result).toBe("k6 cloud --address='' test.js")
   })
 
   it('should generate a local k6 run command with cloud output when isCloud is true and cloudRunLocally is true', () => {
     const path = 'test.js'
-    const flags = ''
+    const flags = []
     const isCloud = true
     const cloudRunLocally = true
     const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
-    expect(result).toBe('k6 run --address= --out=cloud test.js')
+    expect(result).toBe("k6 run --address='' --out=cloud test.js")
   })
 
-  it('should include provided flags in the command', () => {
+  it('should include provided flags in the command', async () => {
     const path = 'test.js'
-    const flags = '--vus=10 --duration=30s'
+    const flags = await parseStringToCLIArgs('--vus=10 --duration=30s')
     const isCloud = false
     const cloudRunLocally = false
     const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
-    expect(result).toBe('k6 run --address= --vus=10 --duration=30s test.js')
+    expect(result).toBe("k6 run --address='' --vus=10 --duration=30s test.js")
   })
 })
 

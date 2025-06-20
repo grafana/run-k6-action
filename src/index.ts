@@ -12,7 +12,7 @@ import {
   validateTestPaths,
 } from './k6helper'
 import { TestRunUrlsMap } from './types'
-import { findTestsToRun } from './utils'
+import { findTestsToRun, parseStringToCLIArgs } from './utils'
 
 const TEST_PIDS: number[] = []
 
@@ -29,8 +29,10 @@ export async function run(): Promise<void> {
     )
     const parallel = core.getBooleanInput('parallel')
     const failFast = core.getBooleanInput('fail-fast')
-    const flags = core.getInput('flags')
-    const inspectFlags = core.getInput('inspect-flags')
+    const flags = await parseStringToCLIArgs(core.getInput('flags'))
+    const inspectFlags = await parseStringToCLIArgs(
+      core.getInput('inspect-flags')
+    )
     const cloudRunLocally = core.getBooleanInput('cloud-run-locally')
     const onlyVerifyScripts = core.getBooleanInput('only-verify-scripts')
     const shouldCommentOnPR = core.getBooleanInput('cloud-comment-on-pr')
@@ -49,10 +51,7 @@ export async function run(): Promise<void> {
       throw new Error('No test files found')
     }
 
-    const verifiedTestPaths = await validateTestPaths(
-      testPaths,
-      inspectFlags ? inspectFlags.split(' ') : []
-    )
+    const verifiedTestPaths = await validateTestPaths(testPaths, inspectFlags)
 
     if (verifiedTestPaths.length === 0) {
       throw new Error('No valid test files found')

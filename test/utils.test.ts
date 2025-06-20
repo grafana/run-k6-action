@@ -2,7 +2,7 @@ import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { findTestsToRun, isDirectory } from '../src/utils'
+import { findTestsToRun, isDirectory, parseStringToCLIArgs } from '../src/utils'
 
 describe('utils', () => {
   // Create a temporary test directory structure in the system temp directory
@@ -80,6 +80,49 @@ describe('utils', () => {
 
       const testFiles = await findTestsToRun(`${tempDir}/subset*.js`)
       expect(testFiles).toEqual([testFile1, testFile2])
+    })
+  })
+
+  describe('parseStringToCLIArgs', () => {
+    const testCases = [
+      {
+        input: '--flag value "quoted string"',
+        expected: ['--flag', 'value', 'quoted string'],
+      },
+      {
+        input: '--flag1 value1 --flag2 value2',
+        expected: ['--flag1', 'value1', '--flag2', 'value2'],
+      },
+      {
+        input: '--flag1 value1 --flag2 value2 "quoted string"',
+        expected: ['--flag1', 'value1', '--flag2', 'value2', 'quoted string'],
+      },
+      {
+        input: '--flag1 value1 --flag2 "quoted string" --flag3 value3',
+        expected: [
+          '--flag1',
+          'value1',
+          '--flag2',
+          'quoted string',
+          '--flag3',
+          'value3',
+        ],
+      },
+      {
+        input: '--flag1 "string with space and \'" ',
+        expected: ['--flag1', "string with space and '"],
+      },
+      {
+        input: '--vus=10 --duration=30s',
+        expected: ['--vus=10', '--duration=30s'],
+      },
+    ]
+
+    testCases.forEach(({ input, expected }) => {
+      it(`should parse ${input}`, async () => {
+        const args = await parseStringToCLIArgs(input)
+        expect(args).toEqual(expected)
+      })
     })
   })
 })

@@ -13,6 +13,6 @@ export default function () {
     'CLI --env flag set': (env) =>
       env.TEST_FLAG_ENV_VAR === 'test-flag-env-var-value',
     'CLI -e flag set': (env) =>
-      env.TEST_SYSTEM_ENV_VAR_E === 'test-cli-e-env-var-value',
+      env.TEST_SYSTEM_ENV_VAR_CLI === 'system env var value from CLI',
   })
 }
