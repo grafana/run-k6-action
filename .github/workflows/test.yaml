@@ -1,6 +1,11 @@
 name: Workflow using the k6 run action
 on:
+  pull_request:
+    branches:
+      - main
   push:
+    branches:
+      - main
 
 permissions:
   contents: read

@@ -147,10 +147,10 @@ export function generateK6RunCommand(
     // In k6 v0.54.0 and later, `k6 cloud run` is the command to use
     // https://github.com/grafana/k6/blob/20369d707f5ee6d7fd8a995972ccdd6b86db2b5d/release%20notes/v0.54.0.md?plain=1#L122
     if (satisfies(k6Version, '>=0.54.0')) {
-      command = 'k6 cloud run';
+      command = 'k6 cloud run'
       if (cloudRunLocally) {
-          // Execute tests locally and upload results to cloud
-          args.push(`--local-execution`);
+        // Execute tests locally and upload results to cloud
+        args.push(`--local-execution`)
       }
     } else {
       if (cloudRunLocally) {
