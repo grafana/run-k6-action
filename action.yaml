@@ -49,6 +49,10 @@ inputs:
     description: 'If true, the anonymous usage analytics reporting will be disabled'
     default: "false"
     required: false
+    
+outputs:
+  testRunIds:
+    description: 'Comma-separated list of GCk6 Test Run IDs executed by this step'
 
 runs:
   using: node20
