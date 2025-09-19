@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "postUpgradeTasks": {
+    "commands": ["npm ci", "npm run package"],
+    "fileFilters": ["dist/**", "package-lock.json"],
+    "executionMode": "branch"
+  }
+}
