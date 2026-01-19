@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "github>grafana/grafana-renovate-config//presets/k6/k6-cloud-common"
+  ],
   "postUpgradeTasks": {
     "commands": ["npm ci", "npm run package"],
     "fileFilters": ["dist/**", "package-lock.json"],
