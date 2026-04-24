@@ -55,5 +55,5 @@ outputs:
     description: 'Comma-separated list of GCk6 Test Run IDs executed by this step'
 
 runs:
-  using: node20
+  using: node24
   main: dist/index.js
