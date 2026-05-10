@@ -137,39 +137,64 @@ export function generateK6RunCommand(
   isCloud: boolean,
   cloudRunLocally: boolean
 ): string {
-  let command = 'k6 run'
-  const args = [`--address=`, ...(flags ? flags.split(' ') : [])]
+  const k6Version = getInstalledK6Version()
+  const customFlags = flags ? flags.split(' ') : []
 
-  // Cloud execution is possible for the test
-  if (isCloud) {
-    // Get the current k6 version
-    const k6Version = getInstalledK6Version()
-    // In k6 v0.54.0 and later, `k6 cloud run` is the command to use
-    // https://github.com/grafana/k6/blob/20369d707f5ee6d7fd8a995972ccdd6b86db2b5d/release%20notes/v0.54.0.md?plain=1#L122
-    if (satisfies(k6Version, '>=0.54.0')) {
+  let command: string
+  let args: string[]
+
+  if (satisfies(k6Version, '>=2.0.0')) {
+    // In k6 v2.0.0 and later, the REST HTTP API server is disabled by
+    // default (https://github.com/grafana/k6/issues/5648), so we no longer
+    // need to pass `--address=` to opt out of it. The command shape is the
+    // same as v0.54.0+ otherwise.
+    args = [...customFlags]
+    if (isCloud) {
       command = 'k6 cloud run'
       if (cloudRunLocally) {
         // Execute tests locally and upload results to cloud
-        args.push(`--local-execution`)
+        args.push('--local-execution')
       }
     } else {
+      command = 'k6 run'
+    }
+  } else if (satisfies(k6Version, '>=0.54.0')) {
+    // In k6 v0.54.0 and later, `k6 cloud run` is the command to use
+    // https://github.com/grafana/k6/blob/20369d707f5ee6d7fd8a995972ccdd6b86db2b5d/release%20notes/v0.54.0.md?plain=1#L122
+    args = ['--address=', ...customFlags]
+    if (isCloud) {
+      command = 'k6 cloud run'
       if (cloudRunLocally) {
+        // Execute tests locally and upload results to cloud
+        args.push('--local-execution')
+      }
+    } else {
+      command = 'k6 run'
+    }
+  } else {
+    // Legacy fallback for k6 < 0.54.0
+    args = ['--address=', ...customFlags]
+    if (isCloud) {
+      if (cloudRunLocally) {
+        command = 'k6 run'
         args.push('--out=cloud')
       } else {
         // Execute tests in cloud
         command = 'k6 cloud'
       }
+    } else {
+      command = 'k6 run'
     }
   }
 
-  // Add path the arguments list
+  // Add path to the arguments list
   args.push(path)
 
   // Append arguments to the command
-  command = `${command} ${args.join(' ')}`
+  const fullCommand = `${command} ${args.join(' ')}`
 
-  core.debug('🤖 Generated command: ' + command)
-  return command
+  core.debug('🤖 Generated command: ' + fullCommand)
+  return fullCommand
 }
 
 export function executeRunK6Command(

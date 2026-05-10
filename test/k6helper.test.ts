@@ -213,6 +213,52 @@ describe('generateK6RunCommand with a k6 version < 0.54.0', () => {
   })
 })
 
+describe('generateK6RunCommand with a k6 version >= 2.0.0', () => {
+  beforeEach(() => {
+    setMockedK6Version('2.0.0')
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should generate a local k6 run command without --address= when isCloud is false', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = false
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 run test.js')
+  })
+
+  it('should generate a cloud k6 run command without --address= when isCloud is true and cloudRunLocally is false', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = true
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 cloud run test.js')
+  })
+
+  it('should generate a cloud k6 run command with --local-execution and without --address= when isCloud is true and cloudRunLocally is true', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = true
+    const cloudRunLocally = true
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 cloud run --local-execution test.js')
+  })
+
+  it('should include provided flags in the command without --address=', () => {
+    const path = 'test.js'
+    const flags = '--vus=10 --duration=30s'
+    const isCloud = false
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 run --vus=10 --duration=30s test.js')
+  })
+})
+
 describe('executeRunK6Command', () => {
   it('should spawn a child process with the given command', () => {
     const command = 'k6 run test.js'
