@@ -114,25 +114,8 @@ describe('isCloudIntegrationEnabled', () => {
     expect(result).toBe(false)
   })
 
-  it('should throw an error if K6_CLOUD_TOKEN is set but K6_CLOUD_PROJECT_ID is not set', () => {
+  it('should return true if K6_CLOUD_TOKEN is set', () => {
     process.env.K6_CLOUD_TOKEN = 'token'
-    delete process.env.K6_CLOUD_PROJECT_ID
-    expect(() => isCloudIntegrationEnabled()).toThrow(
-      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
-    )
-  })
-
-  it('should throw an error if K6_CLOUD_TOKEN is set but K6_CLOUD_PROJECT_ID is empty', () => {
-    process.env.K6_CLOUD_TOKEN = 'token'
-    process.env.K6_CLOUD_PROJECT_ID = ''
-    expect(() => isCloudIntegrationEnabled()).toThrow(
-      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
-    )
-  })
-
-  it('should return true if both K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID are set', () => {
-    process.env.K6_CLOUD_TOKEN = 'token'
-    process.env.K6_CLOUD_PROJECT_ID = 'project-id'
     const result = isCloudIntegrationEnabled()
     expect(result).toBe(true)
   })

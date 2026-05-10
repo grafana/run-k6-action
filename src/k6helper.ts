@@ -96,29 +96,19 @@ export function cleanScriptPath(scriptPath: string): string {
 }
 
 /**
- * Checks if the cloud integration is enabled by checking if the K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID are set.
+ * Checks if the cloud integration is enabled by checking if K6_CLOUD_TOKEN is set.
+ *
+ * Note: other cloud parameters (project ID, stack ID) can be configured via env vars,
+ * CLI flags, or `options.cloud` in the script, so we leave their validation to k6 itself.
  *
  * @export
  * @return {boolean} - True if the cloud integration is enabled, false otherwise
  */
 export function isCloudIntegrationEnabled(): boolean {
-  if (
-    process.env.K6_CLOUD_TOKEN === undefined ||
-    process.env.K6_CLOUD_TOKEN === ''
-  ) {
-    return false
-  }
-
-  if (
-    process.env.K6_CLOUD_PROJECT_ID === undefined ||
-    process.env.K6_CLOUD_PROJECT_ID === ''
-  ) {
-    throw new Error(
-      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
-    )
-  }
-
-  return true
+  return (
+    process.env.K6_CLOUD_TOKEN !== undefined &&
+    process.env.K6_CLOUD_TOKEN !== ''
+  )
 }
 
 /**
