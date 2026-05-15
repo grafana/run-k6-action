@@ -114,25 +114,8 @@ describe('isCloudIntegrationEnabled', () => {
     expect(result).toBe(false)
   })
 
-  it('should throw an error if K6_CLOUD_TOKEN is set but K6_CLOUD_PROJECT_ID is not set', () => {
+  it('should return true if K6_CLOUD_TOKEN is set', () => {
     process.env.K6_CLOUD_TOKEN = 'token'
-    delete process.env.K6_CLOUD_PROJECT_ID
-    expect(() => isCloudIntegrationEnabled()).toThrow(
-      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
-    )
-  })
-
-  it('should throw an error if K6_CLOUD_TOKEN is set but K6_CLOUD_PROJECT_ID is empty', () => {
-    process.env.K6_CLOUD_TOKEN = 'token'
-    process.env.K6_CLOUD_PROJECT_ID = ''
-    expect(() => isCloudIntegrationEnabled()).toThrow(
-      'K6_CLOUD_PROJECT_ID must be set when K6_CLOUD_TOKEN is set'
-    )
-  })
-
-  it('should return true if both K6_CLOUD_TOKEN and K6_CLOUD_PROJECT_ID are set', () => {
-    process.env.K6_CLOUD_TOKEN = 'token'
-    process.env.K6_CLOUD_PROJECT_ID = 'project-id'
     const result = isCloudIntegrationEnabled()
     expect(result).toBe(true)
   })
@@ -210,6 +193,52 @@ describe('generateK6RunCommand with a k6 version < 0.54.0', () => {
     const cloudRunLocally = true
     const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
     expect(result).toBe('k6 run --address= --out=cloud test.js')
+  })
+})
+
+describe('generateK6RunCommand with a k6 version >= 2.0.0', () => {
+  beforeEach(() => {
+    setMockedK6Version('2.0.0')
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should generate a local k6 run command without --address= when isCloud is false', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = false
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 run test.js')
+  })
+
+  it('should generate a cloud k6 run command without --address= when isCloud is true and cloudRunLocally is false', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = true
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 cloud run test.js')
+  })
+
+  it('should generate a cloud k6 run command with --local-execution and without --address= when isCloud is true and cloudRunLocally is true', () => {
+    const path = 'test.js'
+    const flags = ''
+    const isCloud = true
+    const cloudRunLocally = true
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 cloud run --local-execution test.js')
+  })
+
+  it('should include provided flags in the command without --address=', () => {
+    const path = 'test.js'
+    const flags = '--vus=10 --duration=30s'
+    const isCloud = false
+    const cloudRunLocally = false
+    const result = generateK6RunCommand(path, flags, isCloud, cloudRunLocally)
+    expect(result).toBe('k6 run --vus=10 --duration=30s test.js')
   })
 })
 

@@ -80,6 +80,8 @@ jobs:
             ./tests/api*.js
 ```
 
+> **k6 v2.0.0+ users:** k6 v2 requires stack information for cloud commands ([grafana/k6#5651](https://github.com/grafana/k6/issues/5651)). Provide it via the `K6_CLOUD_STACK_ID` env var, the relevant CLI flag, or `options.cloud.stackID` in your script. The action does not validate this — k6 itself will raise an error if it is missing.
+
 By default, the action will run k6 locally and send the results to Grafana Cloud k6. If you want to run the tests in our Cloud instances, you need to change the `cloud-run-locally` input to `false`:
 
 ```yaml
