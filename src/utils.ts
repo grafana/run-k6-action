@@ -1,4 +1,4 @@
-import * as glob from '@actions/glob'
+import { glob } from 'node:fs/promises'
 
 import * as fs from 'fs-extra'
 
@@ -24,7 +24,11 @@ export function isDirectory(filepath: string): boolean {
  * @returns {Promise<string[]>} - A promise that resolves to an array of test file paths.
  */
 export async function findTestsToRun(path: string): Promise<string[]> {
-  const globber = await glob.create(path)
-  const files = await globber.glob()
-  return files.filter((file) => !isDirectory(file))
+  const files: string[] = []
+  for await (const file of glob(path)) {
+    if (!isDirectory(file)) {
+      files.push(file)
+    }
+  }
+  return files
 }
