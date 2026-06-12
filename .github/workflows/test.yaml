@@ -46,7 +46,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # get-vault-secrets/v1.3.2
+      - uses: grafana/shared-workflows/actions/get-vault-secrets@e46fe1e9a2bf9e618bcf8d8d32f3a7381b45c06d # get-vault-secrets/v2.0.0
         with:
           # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
           # Also stored in 1Password as "k6 Cloud CI/CD Secrets" (Vault is write-only)
