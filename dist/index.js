@@ -65514,7 +65514,7 @@ async function findTestsToRun(path) {
         .map((l) => l.trim())
         .filter((l) => l.length > 0);
     const includes = lines.filter((l) => !l.startsWith('!'));
-    const excludes = lines.filter((l) => l.startsWith('!')).map((l) => l.slice(1));
+    const excludes = lines.filter((l) => l.startsWith('!')).map((l) => l.slice(1).trim());
     const seen = new Set();
     const files = [];
     for (const pattern of includes) {
