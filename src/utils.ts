@@ -30,7 +30,9 @@ export async function findTestsToRun(path: string): Promise<string[]> {
     .map((l) => l.trim())
     .filter((l) => l.length > 0)
   const includes = lines.filter((l) => !l.startsWith('!'))
-  const excludes = lines.filter((l) => l.startsWith('!')).map((l) => l.slice(1).trim())
+  const excludes = lines
+    .filter((l) => l.startsWith('!'))
+    .map((l) => l.slice(1).trim())
 
   const seen = new Set<string>()
   const files: string[] = []
