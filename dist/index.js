@@ -65485,6 +65485,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isDirectory = isDirectory;
 exports.findTestsToRun = findTestsToRun;
 const promises_1 = __nccwpck_require__(1455);
+const node_path_1 = __nccwpck_require__(6760);
 const fs = __importStar(__nccwpck_require__(2136));
 /**
  * Checks if a given path is a directory.
@@ -65508,10 +65509,24 @@ function isDirectory(filepath) {
  * @returns {Promise<string[]>} - A promise that resolves to an array of test file paths.
  */
 async function findTestsToRun(path) {
+    const lines = path
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+    const includes = lines.filter((l) => !l.startsWith('!'));
+    const excludes = lines
+        .filter((l) => l.startsWith('!'))
+        .map((l) => l.slice(1).trim());
+    const seen = new Set();
     const files = [];
-    for await (const file of (0, promises_1.glob)(path)) {
-        if (!isDirectory(file)) {
-            files.push(file);
+    for (const pattern of includes) {
+        for await (const file of (0, promises_1.glob)(pattern)) {
+            if (!seen.has(file) &&
+                !isDirectory(file) &&
+                !excludes.some((ex) => (0, node_path_1.matchesGlob)(file, ex))) {
+                seen.add(file);
+                files.push(file);
+            }
         }
     }
     return files;
@@ -65725,6 +65740,14 @@ module.exports = require("node:http2");
 
 "use strict";
 module.exports = require("node:net");
+
+/***/ }),
+
+/***/ 6760:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
 
 /***/ }),
 

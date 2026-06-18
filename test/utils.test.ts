@@ -81,5 +81,32 @@ describe('utils', () => {
       const testFiles = await findTestsToRun(`${tempDir}/subset*.js`)
       expect(testFiles).toEqual([testFile1, testFile2])
     })
+
+    it('should support multiline patterns with negation', async () => {
+      const included1 = path.join(tempDir, 'incl1.js')
+      const included2 = path.join(tempDir, 'incl2.js')
+      const excluded = path.join(tempDir, 'excl.js')
+      fs.writeFileSync(included1, '')
+      fs.writeFileSync(included2, '')
+      fs.writeFileSync(excluded, '')
+
+      const pattern = `${tempDir}/incl*.js\n${tempDir}/excl*.js\n!${excluded}`
+      const testFiles = await findTestsToRun(pattern)
+      expect(testFiles).toContain(included1)
+      expect(testFiles).toContain(included2)
+      expect(testFiles).not.toContain(excluded)
+    })
+
+    it('should handle spaces after ! in negation patterns', async () => {
+      const included = path.join(tempDir, 'space-incl.js')
+      const excluded = path.join(tempDir, 'space-excl.js')
+      fs.writeFileSync(included, '')
+      fs.writeFileSync(excluded, '')
+
+      const pattern = `${tempDir}/space-*.js\n! ${excluded}`
+      const testFiles = await findTestsToRun(pattern)
+      expect(testFiles).toContain(included)
+      expect(testFiles).not.toContain(excluded)
+    })
   })
 })
