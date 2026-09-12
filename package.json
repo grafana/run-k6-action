@@ -1,7 +1,7 @@
 {
   "name": "run-k6-action",
   "version": "1.0.0",
-  "packageManager": "npm@11.17.0",
+  "packageManager": "npm@11.19.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,23 +21,23 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "9.39.4",
+    "@eslint/js": "9.39.5",
     "@types/chmodr": "1.0.3",
     "@types/fs-extra": "11.0.4",
-    "@types/node": "24.13.2",
-    "@types/semver": "7.7.1",
-    "@typescript-eslint/eslint-plugin": "8.61.0",
-    "@typescript-eslint/parser": "8.61.0",
-    "@vitest/coverage-v8": "4.1.8",
-    "eslint": "9.39.4",
+    "@types/node": "24.13.4",
+    "@types/semver": "7.8.0",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-unused-imports": "4.4.1",
-    "prettier": "3.8.4",
+    "prettier": "3.9.6",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.61.0",
-    "vitest": "4.1.8"
+    "typescript-eslint": "8.70.0",
+    "vitest": "4.1.11"
   },
   "dependencies": {
     "@actions/core": "^2.0.3",
@@ -45,7 +45,7 @@
     "@actions/github": "6.0.1",
     "@actions/http-client": "^4.0.1",
     "@actions/tool-cache": "^3.0.1",
-    "@vercel/ncc": "^0.44.0",
+    "@vercel/ncc": "^0.45.0",
     "chmodr": "^2.0.2",
     "fs-extra": "^11.3.4",
     "semver": "^7.7.4"
