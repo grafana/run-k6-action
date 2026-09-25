@@ -1,7 +1,7 @@
 {
   "name": "run-k6-action",
   "version": "1.0.0",
-  "packageManager": "npm@11.17.0",
+  "packageManager": "npm@12.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
