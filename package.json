@@ -1,7 +1,7 @@
 {
   "name": "run-k6-action",
   "version": "1.0.0",
-  "packageManager": "npm@12.2.2",
+  "packageManager": "npm@12.2.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -26,18 +26,18 @@
     "@types/fs-extra": "11.0.4",
     "@types/node": "26.6.6",
     "@types/semver": "7.8.0",
-    "@typescript-eslint/eslint-plugin": "8.72.1",
-    "@typescript-eslint/parser": "8.72.1",
-    "@vitest/coverage-v8": "5.1.0",
+    "@typescript-eslint/eslint-plugin": "8.73.0",
+    "@typescript-eslint/parser": "8.73.0",
+    "@vitest/coverage-v8": "5.1.1",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-unused-imports": "4.4.1",
-    "prettier": "3.9.10",
+    "prettier": "3.10.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1",
-    "vitest": "5.1.0"
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.1"
   },
   "dependencies": {
     "@actions/core": "^2.0.3",
